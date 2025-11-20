@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -20,15 +21,52 @@
               surface: {
                 primary: '#0f172a',
                 secondary: '#1e293b',
+                interactive: 'rgba(255, 255, 255, 0.05)'
               },
-              glass: {
-                light: 'rgba(255, 255, 255, 0.1)',
-                medium: 'rgba(255, 255, 255, 0.2)',
-                heavy: 'rgba(255, 255, 255, 0.05)',
+              brand: {
+                start: '#3b82f6',
+                end: '#8b5cf6'
+              },
+              dark: {
+                surface: {
+                  primary: '#ffffff',
+                  secondary: '#f3f4f6',
+                  interactive: 'rgba(0, 0, 0, 0.05)'
+                },
+                text: {
+                  primary: '#111827',
+                  secondary: '#4b5563'
+                },
+                brand: {
+                  start: '#2563eb',
+                  end: '#7c3aed'
+                },
+                border: {
+                  primary: '#e5e7eb'
+                }
+              },
+              border: {
+                primary: 'rgba(255, 255, 255, 0.1)'
+              },
+              text: {
+                primary: '#f8fafc',
+                secondary: '#94a3b8'
               }
             },
             animation: {
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'scale-in': 'scaleIn 0.2s ease-out',
+              'fade-in': 'fadeIn 0.5s ease-out',
+            },
+            keyframes: {
+              scaleIn: {
+                '0%': { transform: 'scale(0.95)', opacity: '0' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              }
             }
           },
         },
@@ -38,9 +76,9 @@
       body {
         background-color: #0f172a;
         color: white;
-        overflow: hidden; /* Prevent global scroll, manage within containers */
+        overflow: hidden; /* App handles scrolling internally */
       }
-      /* Custom Scrollbar for Glass Effect */
+      /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
       }
@@ -48,11 +86,16 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(100, 116, 139, 0.5);
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(100, 116, 139, 0.7);
+      }
+      /* Dark mode overrides */
+      .dark body {
+        background-color: #ffffff;
+        color: #111827;
       }
     </style>
   <script type="importmap">

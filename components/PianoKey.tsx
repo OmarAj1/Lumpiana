@@ -12,22 +12,37 @@ interface PianoKeyProps {
 }
 
 const PianoKey: React.FC<PianoKeyProps> = ({ note, isBlack, isActive, label, style, className }) => {
-  const baseClasses = "relative flex items-end justify-center rounded-b-sm transition-all duration-75 ease-out select-none cursor-default shadow-lg";
+  // Realistic Piano Styling
+  const commonClasses = "relative flex items-end justify-center transition-all duration-100 ease-out select-none cursor-default";
   
-  const colorClasses = isBlack
-    ? `bg-surface-primary text-white border-x border-b border-gray-800 ${isActive ? 'bg-gradient-to-b from-violet-500 to-violet-700 shadow-[0_0_20px_rgba(139,92,246,0.8)]' : 'bg-gray-900'}`
-    : `bg-white text-gray-900 border border-gray-300 ${isActive ? 'bg-gradient-to-b from-violet-200 to-violet-400 shadow-[0_0_20px_rgba(139,92,246,0.5)]' : 'hover:bg-gray-50'}`;
+  // White Key: Ivory look with 3D depth at bottom
+  const whiteKeyClasses = `
+    z-0 
+    ${isActive 
+      ? 'bg-gradient-to-b from-blue-300 to-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)] border-b-4 border-blue-700 translate-y-1' 
+      : 'bg-gradient-to-b from-white to-gray-200 border-b-8 border-gray-300 shadow-[inset_0_-5px_5px_rgba(0,0,0,0.05)] hover:bg-gray-50'} 
+    border-x border-gray-300 rounded-b-[6px] text-gray-400
+  `;
 
-  // Height is handled by parent or defaults
-  const heightClass = isBlack ? 'h-[60%]' : 'h-full';
-  const zIndex = isBlack ? 'z-10' : 'z-0';
+  // Black Key: Matte black with glossy top highlight
+  const blackKeyClasses = `
+    z-10 h-[65%] absolute top-0
+    ${isActive 
+      ? 'bg-gradient-to-b from-blue-600 to-blue-800 shadow-[0_0_20px_rgba(59,130,246,0.8)] border-b-2 border-blue-900' 
+      : 'bg-gradient-to-b from-gray-800 via-black to-black border-x border-b border-gray-900 shadow-[2px_5px_10px_rgba(0,0,0,0.4),inset_0_5px_5px_rgba(255,255,255,0.15)]'}
+    rounded-b-[4px]
+  `;
 
   return (
     <div 
-      className={`${baseClasses} ${colorClasses} ${heightClass} ${zIndex} ${className || ''}`}
+      className={`${commonClasses} ${isBlack ? blackKeyClasses : whiteKeyClasses} ${className || ''}`}
       style={style}
     >
-      {!isBlack && <span className="mb-4 text-[10px] font-bold text-gray-400/50">{label}</span>}
+      {!isBlack && (
+        <span className={`mb-3 text-xs font-bold tracking-wider ${isActive ? 'text-white' : 'text-gray-400'}`}>
+          {label}
+        </span>
+      )}
     </div>
   );
 };
