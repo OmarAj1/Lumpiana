@@ -1,0 +1,7 @@
+{
+  "name": "Luma Keyboards",
+  "description": "An AI-powered piano learning application featuring real-time pitch detection, adaptive courses, and Gemini-generated exercises wrapped in a glassmorphic design.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
