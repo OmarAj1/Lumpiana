@@ -1,0 +1,106 @@
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { AppState, User, AppSettings, Song, OnboardingStep, Instrument, AuthView } from '../types';
+import { storageService } from '../services/storageService';
+import { authService } from '../services/authService';
+import { DEMO_SONG } from '../constants';
+
+interface GameContextType {
+  appState: AppState;
+  setAppState: (state: AppState) => void;
+  currentUser: User | null;
+  setCurrentUser: (user: User | null) => void;
+  settings: AppSettings;
+  setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
+  currentSong: Song;
+  setCurrentSong: (song: Song) => void;
+  onboardingStep: OnboardingStep;
+  setOnboardingStep: (step: OnboardingStep) => void;
+  selectedInstrument: Instrument;
+  setSelectedInstrument: (inst: Instrument) => void;
+  composedSongs: Song[];
+  setComposedSongs: (songs: Song[]) => void;
+  
+  // Auth Modal State
+  isAuthModalOpen: boolean;
+  setAuthModalOpen: (open: boolean) => void;
+  authModalView: AuthView;
+  setAuthModalView: (view: AuthView) => void;
+  
+  // Actions
+  signOut: () => void;
+  toggleTheme: () => void;
+}
+
+const GameContext = createContext<GameContextType | undefined>(undefined);
+
+export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [appState, setAppState] = useState<AppState>(AppState.ONBOARDING);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [settings, setSettings] = useState<AppSettings>(storageService.getSettings());
+  const [currentSong, setCurrentSong] = useState<Song>(DEMO_SONG);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(OnboardingStep.WELCOME);
+  const [selectedInstrument, setSelectedInstrument] = useState<Instrument>(Instrument.PIANO);
+  const [composedSongs, setComposedSongs] = useState<Song[]>([]);
+  
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalView, setAuthModalView] = useState<AuthView>('signIn');
+
+  // Initial Load
+  useEffect(() => {
+    authService.getCurrentUser().then(user => {
+      if (user) {
+        setCurrentUser(user);
+        if (user.level > 1 || Object.keys(user.progress).length > 0) {
+          setAppState(AppState.MENU);
+          setOnboardingStep(OnboardingStep.COMPLETE);
+        }
+      }
+    });
+    setComposedSongs(storageService.getComposedSongs());
+  }, []);
+
+  // Settings Persistence
+  useEffect(() => {
+    storageService.saveSettings(settings);
+    if (settings.darkMode) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  }, [settings]);
+
+  const signOut = () => {
+    authService.signOut();
+    setCurrentUser(null);
+    setAppState(AppState.ONBOARDING);
+    setOnboardingStep(OnboardingStep.WELCOME);
+  };
+
+  const toggleTheme = () => {
+      setSettings(prev => ({ ...prev, darkMode: !prev.darkMode }));
+  };
+
+  return (
+    <GameContext.Provider value={{
+      appState, setAppState,
+      currentUser, setCurrentUser,
+      settings, setSettings,
+      currentSong, setCurrentSong,
+      onboardingStep, setOnboardingStep,
+      selectedInstrument, setSelectedInstrument,
+      composedSongs, setComposedSongs,
+      isAuthModalOpen, setAuthModalOpen,
+      authModalView, setAuthModalView,
+      signOut, toggleTheme
+    }}>
+      {children}
+    </GameContext.Provider>
+  );
+};
+
+export const useGame = () => {
+  const context = useContext(GameContext);
+  if (!context) throw new Error("useGame must be used within a GameProvider");
+  return context;
+};

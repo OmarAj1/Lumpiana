@@ -88,34 +88,35 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
     try {
       const ai = getAi();
       
-      // Enhanced prompt for Full Song + Lyrics
+      // Enhanced prompt for Full Song + Lyrics using Thinking Mode
       const prompt = `
-        Role: You are an expert musicologist and transcriber with access to the IMSLP (International Music Score Library Project) database and global song charts.
+        Role: You are an expert musicologist and professional transcriber.
         
-        Task: Generate playable sheet music (melody) and backing chords for the request: "${songTitle}" ${artist ? `by ${artist}` : ''}.
-        
-        Logic:
-        1. If the request is a CLASSICAL PIECE:
-           - Retrieve the MAIN THEME from the public domain score.
-           - Include at least 16-32 bars.
-        
-        2. If the request is a MODERN SONG (Pop, Rock, Jazz):
-           - Transcribe the FULL STRUCTURE: Verse, Chorus, Bridge (if applicable).
-           - Include LYRICS for each note in the 'lyrics' field (one syllable per note).
-           - Limit to ~200 notes max to keep generation fast but complete.
-        
-        CRITICAL CONSTRAINTS:
-        - 'lyrics': Optional string on note events. Use for vocals.
-        - Backing Track: Simple, ambient chords (1 chord every 2-4 beats).
-        - Output must be valid JSON.
-        
-        Return JSON matching the schema exactly.
+        Task: Create a comprehensive, high-fidelity piano arrangement (melody + backing chords) for the song "${songTitle}"${artist ? ` specifically by the artist "${artist}"` : ''}.
+
+        CRITICAL INSTRUCTIONS:
+        1.  **ARTIST ACCURACY**: You MUST use the provided artist name "${artist || 'the original artist'}" to identify the correct recording, tempo, key, and style. Do not generate a generic version.
+        2.  **SUBSTANTIAL LENGTH**: 
+            - The arrangement MUST be a full-length song (approx 2-3 minutes).
+            - It MUST contain a MINIMUM of 150 notes. Target 250-350 notes.
+            - Do NOT return a short snippet.
+        3.  **STRUCTURE**: 
+            - Explicitly structure the arrangement: Intro -> Verse 1 -> Chorus -> Verse 2 -> Chorus -> Bridge -> Outro.
+            - Ensure smooth transitions between sections.
+        4.  **CONTENT**:
+            - **Melody**: Precise transcription of the vocal melody or main theme.
+            - **Lyrics**: You MUST map the correct lyrics to every corresponding note event in the melody.
+            - **Harmony**: Provide a 'backingTrack' of chords that accurately follows the song's harmonic progression.
+            - **Hands**: Assign 'r' for melody/vocals and 'l' for bass/accompaniment lines where appropriate in the notes array if polyphonic.
+        5.  **FORMAT**:
+            - Return a single, valid JSON object matching the schema.
       `;
   
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
+          thinkingConfig: { thinkingBudget: 32768 }, // Enable thinking mode for complex song generation
           // Safety settings to prevent blocking on song titles
           safetySettings: [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -139,7 +140,8 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
                     octave: { type: Type.NUMBER },
                     duration: { type: Type.NUMBER },
                     startTime: { type: Type.NUMBER },
-                    lyrics: { type: Type.STRING, nullable: true }
+                    lyrics: { type: Type.STRING, nullable: true },
+                    hand: { type: Type.STRING, enum: ['l', 'r'], nullable: true }
                   }
                 }
               },
@@ -182,7 +184,7 @@ export const generateWorkout = async (weakness?: string) => {
     const prompt = `
       Create a "5-Minute Workout" piano exercise focusing on ${focus}.
       It should be a repetitive technical drill.
-      Limit to 8 bars max.
+      Limit to 16 bars.
       Return JSON.
     `;
 

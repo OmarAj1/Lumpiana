@@ -89,7 +89,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                       <div className="h-32 bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center relative overflow-hidden">
                           <div className="absolute bottom-0 left-0 right-0 bg-blue-500 transition-all duration-75 ease-out" style={{ height: `${Math.min(100, currentInput.volume * 2000)}%`, opacity: 0.5 }} />
                           <div className="z-10 text-2xl font-mono font-bold text-white">
-                              {currentInput.note ? `${currentInput.note}${currentInput.octave}` : '...'}
+                              {currentInput.activeNotes[0] ? `${currentInput.activeNotes[0].note}${currentInput.activeNotes[0].octave}` : '...'}
                           </div>
                       </div>
                       
@@ -117,4 +117,3 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 };
 
 export default OnboardingScreen;
-    

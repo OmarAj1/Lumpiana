@@ -91,7 +91,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
 
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                     <div>
-                        <p className="font-bold">Show Note Labels</p>
+                        <p className="font-bold">Show Note Labels on Piano</p>
                         <p className="text-xs text-gray-500">Display C, D, E on piano keys</p>
                     </div>
                     <input 
@@ -100,6 +100,33 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                         onChange={(e) => setSettings(s => ({ ...s, showNoteLabels: e.target.checked }))}
                         className="w-6 h-6 accent-blue-500"
                     />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                         <label className="block text-sm font-bold text-gray-400 mb-2">Sheet Music Style</label>
+                         <select 
+                            value={settings.noteDisplayStyle}
+                            onChange={(e) => setSettings(s => ({ ...s, noteDisplayStyle: e.target.value as any }))}
+                            className="w-full p-3 rounded-xl bg-white/10 border border-white/10 focus:outline-none text-white dark:text-gray-200"
+                         >
+                             <option value="Standard">Standard</option>
+                             <option value="ScaleDegree">Scale Degrees (1, 2, 3)</option>
+                             <option value="Lyrics">Lyrics</option>
+                             <option value="NoteName">Note Names (C, D, E)</option>
+                         </select>
+                    </div>
+                    <div>
+                         <label className="block text-sm font-bold text-gray-400 mb-2">Accidental Style</label>
+                         <select 
+                            value={settings.accidentalStyle}
+                            onChange={(e) => setSettings(s => ({ ...s, accidentalStyle: e.target.value as any }))}
+                            className="w-full p-3 rounded-xl bg-white/10 border border-white/10 focus:outline-none text-white dark:text-gray-200"
+                         >
+                             <option value="Sharp">Sharps (♯)</option>
+                             <option value="Flat">Flats (♭)</option>
+                         </select>
+                    </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
@@ -136,17 +163,29 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                         
                         {/* Note Display */}
                         <div className="z-10 font-mono font-bold text-xl flex items-center gap-2">
-                             {currentInput.note ? (
+                             {currentInput.activeNotes[0] ? (
                                  <>
-                                    <span className="text-blue-400">{currentInput.note}{currentInput.octave}</span>
-                                    <span className="text-xs text-gray-500">({Math.round(currentInput.pitch)}Hz)</span>
+                                    <span className="text-blue-400">{currentInput.activeNotes[0].note}{currentInput.activeNotes[0].octave}</span>
+                                    <span className="text-xs text-gray-500">({Math.round(currentInput.activeNotes[0].frequency)}Hz)</span>
                                  </>
                              ) : (
                                  <span className="text-gray-600">Listening...</span>
                              )}
                         </div>
                     </div>
-                    <p className="text-xs text-gray-500">Play a note to verify input detection.</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+                        <div className="flex justify-between">
+                            <span>Signal-to-Noise (SNR)</span>
+                            <span className={currentInput.snr > 10 ? 'text-green-400' : 'text-red-400'}>{Math.round(currentInput.snr)} dB</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Clarity (Harmonics)</span>
+                            <span className={currentInput.clarity > 0.8 ? 'text-green-400' : 'text-yellow-400'}>{Math.round(currentInput.clarity * 100)}%</span>
+                        </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500">Play a note to verify input detection. Ensure SNR is > 10dB for best results.</p>
                 </div>
 
                 <div>

@@ -26,12 +26,21 @@ export enum NoteStatus {
   HINTED = 'HINTED'    // Yellow (Waiting)
 }
 
+export type SongCategory = 'Song' | 'Course' | 'Workout' | 'Jam';
+
+export type NoteDisplayStyle = 'Standard' | 'ScaleDegree' | 'Lyrics' | 'NoteName';
+
+export type AccidentalStyle = 'Sharp' | 'Flat';
+
+export type SongStage = 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface NoteEvent {
   note: NoteName;
   octave: number;
   duration: number; // in beats
   startTime: number; // absolute time in sequence
   lyrics?: string; // Lyrics syllable
+  hand?: 'l' | 'r';
 }
 
 export interface BackingTrackEvent {
@@ -45,22 +54,30 @@ export interface Song {
   id: string;
   title: string;
   artist: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert' | 'Master';
   bpm: number;
   notes: NoteEvent[];
   backingTrack?: BackingTrackEvent[];
   description?: string;
   preferredInstrument?: Instrument;
-  category?: 'Song' | 'Course' | 'Workout';
+  category: SongCategory;
+  stage?: SongStage; // 1 to 6
+  keySignature?: string; // e.g. "C", "G", "F"
+}
+
+export interface DetectedNote {
+    note: NoteName;
+    octave: number;
+    cents: number;
+    frequency: number;
 }
 
 export interface AudioAnalysisResult {
-  pitch: number; // Frequency in Hz
-  note: NoteName | null;
-  octave: number | null;
-  clarity: number; // 0 to 1, confidence of pitch
+  activeNotes: DetectedNote[]; // Polyphonic support
   volume: number; // RMS
-  source?: 'mic' | 'midi'; 
+  snr: number; // Signal-to-Noise Ratio in dB
+  clarity: number;
+  source: 'mic' | 'midi' | 'none'; 
 }
 
 export interface SongStats {
@@ -105,6 +122,8 @@ export interface AppSettings {
   inputSource: 'auto' | 'mic' | 'midi';
   themeColor: 'blue' | 'purple' | 'orange';
   darkMode: boolean;          // Light/Dark mode
+  noteDisplayStyle: NoteDisplayStyle;
+  accidentalStyle: AccidentalStyle;
 }
 
 export enum OnboardingStep {

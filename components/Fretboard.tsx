@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AudioAnalysisResult, NoteName } from '../types';
 import { audioEngine } from '../services/audioEngine';
@@ -16,9 +17,11 @@ const Fretboard: React.FC<FretboardProps> = ({ currentInput, targetNote }) => {
   let activePositions: {s: number, f: number, type: 'user' | 'target'}[] = [];
 
   // User Input
-  if (currentInput.note && currentInput.octave) {
-    const pos = audioEngine.getGuitarPosition(currentInput.note, currentInput.octave);
-    if (pos) activePositions.push({ s: pos.stringIdx, f: pos.fret, type: 'user' });
+  if (currentInput.activeNotes && currentInput.activeNotes.length > 0) {
+    currentInput.activeNotes.forEach(note => {
+        const pos = audioEngine.getGuitarPosition(note.note, note.octave);
+        if (pos) activePositions.push({ s: pos.stringIdx, f: pos.fret, type: 'user' });
+    });
   }
 
   // Target Note (Guide)

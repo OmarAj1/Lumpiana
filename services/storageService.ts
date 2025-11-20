@@ -1,7 +1,7 @@
 
 import { AppSettings, Song } from '../types';
 
-const SETTINGS_KEY = 'luma_app_settings_v3'; // Bumped version
+const SETTINGS_KEY = 'luma_app_settings_v5'; // Bumped version for new defaults
 const COMPOSED_SONGS_KEY = 'luma_composed_library';
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -18,7 +18,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoSaveSongs: true,
   inputSource: 'auto',
   themeColor: 'blue',
-  darkMode: true
+  darkMode: true, // Dark mode enabled by default
+  noteDisplayStyle: 'Standard',
+  accidentalStyle: 'Sharp'
 };
 
 export const storageService = {
