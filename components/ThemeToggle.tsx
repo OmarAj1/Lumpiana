@@ -1,20 +1,15 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
-const ThemeToggle: React.FC = () => {
-  const [isDark, setIsDark] = useState(true);
+interface ThemeToggleProps {
+  isDark: boolean;
+  onToggle: () => void;
+}
 
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDark]);
-
+const ThemeToggle: React.FC<ThemeToggleProps> = ({ isDark, onToggle }) => {
   return (
     <button
-      onClick={() => setIsDark(!isDark)}
+      onClick={onToggle}
       className="relative w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded-full p-1 transition-colors duration-300 focus:outline-none ring-2 ring-transparent focus:ring-blue-500"
       aria-label="Toggle Theme"
     >

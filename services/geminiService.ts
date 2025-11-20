@@ -24,6 +24,12 @@ const cleanJson = (text: string): string => {
   return clean.trim();
 };
 
+export const stopSpeech = () => {
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+};
+
 export const generateLesson = async (level: string, genre: string) => {
   try {
     const ai = getAi();
@@ -58,6 +64,7 @@ export const generateLesson = async (level: string, genre: string) => {
                   octave: { type: Type.NUMBER },
                   duration: { type: Type.NUMBER },
                   startTime: { type: Type.NUMBER },
+                  lyrics: { type: Type.STRING, nullable: true }
                 }
               }
             }
@@ -81,24 +88,25 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
     try {
       const ai = getAi();
       
-      // Enhanced prompt to simulate IMSLP / Classical Library access
+      // Enhanced prompt for Full Song + Lyrics
       const prompt = `
         Role: You are an expert musicologist and transcriber with access to the IMSLP (International Music Score Library Project) database and global song charts.
         
         Task: Generate playable sheet music (melody) and backing chords for the request: "${songTitle}" ${artist ? `by ${artist}` : ''}.
         
         Logic:
-        1. If the request is a CLASSICAL PIECE (e.g., Bach, Beethoven, Mozart, or contains 'Op.', 'No.', 'Sonata'):
-           - Retrieve the MAIN THEME accurately from the public domain score.
-           - Respect the original key signature if possible, or transpose to C/G Major if too complex.
-           - Use 'bpm' appropriate for the piece (e.g., Adagio ~60, Allegro ~120).
+        1. If the request is a CLASSICAL PIECE:
+           - Retrieve the MAIN THEME from the public domain score.
+           - Include at least 16-32 bars.
         
         2. If the request is a MODERN SONG (Pop, Rock, Jazz):
-           - Transcribe the MAIN CHORUS or HOOK.
+           - Transcribe the FULL STRUCTURE: Verse, Chorus, Bridge (if applicable).
+           - Include LYRICS for each note in the 'lyrics' field (one syllable per note).
+           - Limit to ~200 notes max to keep generation fast but complete.
         
         CRITICAL CONSTRAINTS:
-        - LIMIT: Max 60 notes total. Max 8-12 bars. Do NOT generate the full symphony/song.
-        - Backing Track: Simple, ambient chords (1 chord every 2-4 beats) that fit the harmony.
+        - 'lyrics': Optional string on note events. Use for vocals.
+        - Backing Track: Simple, ambient chords (1 chord every 2-4 beats).
         - Output must be valid JSON.
         
         Return JSON matching the schema exactly.
@@ -108,7 +116,7 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-          // Safety settings to prevent blocking on song titles like "Kill Bill" or "Tipsy"
+          // Safety settings to prevent blocking on song titles
           safetySettings: [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
             { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -131,6 +139,7 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
                     octave: { type: Type.NUMBER },
                     duration: { type: Type.NUMBER },
                     startTime: { type: Type.NUMBER },
+                    lyrics: { type: Type.STRING, nullable: true }
                   }
                 }
               },
@@ -219,7 +228,7 @@ export const getFeedback = async (score: number, misses: number) => {
      const ai = getAi();
      const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `A piano student just finished a lesson. Score: ${score} points. Missed notes: ${misses}. Give a short, encouraging, 1-sentence tip or praise.`,
+      contents: `A piano student just finished a lesson. Score: ${score} points. Missed notes: ${misses}. If misses > 0, be constructive. If score is high, be praising. Give a short, 1-sentence tip.`,
     });
     return response.text;
   } catch (e) {

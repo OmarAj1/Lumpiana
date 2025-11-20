@@ -31,6 +31,7 @@ export interface NoteEvent {
   octave: number;
   duration: number; // in beats
   startTime: number; // absolute time in sequence
+  lyrics?: string; // Lyrics syllable
 }
 
 export interface BackingTrackEvent {
@@ -89,6 +90,23 @@ export interface LoopRegion {
   active: boolean;
 }
 
+export interface AppSettings {
+  defaultSpeed: number;       // 0.5 - 1.5
+  enableLooping: boolean;     // Default loop state
+  showNoteLabels: boolean;    // Piano key text
+  strictMode: boolean;        // Harder timing window
+  micSensitivity: number;     // Input threshold multiplier
+  masterVolume: number;       // 0.0 - 1.0
+  enableTTS: boolean;         // Sing lyrics (Gameplay)
+  enableVoiceFeedback: boolean; // Voice interactions (Welcome, Feedback, Errors)
+  enableParticleEffects: boolean; // Visual fluff
+  showDebugInfo: boolean;     // Clarity/Pitch overlay
+  autoSaveSongs: boolean;     // Save generated songs automatically
+  inputSource: 'auto' | 'mic' | 'midi';
+  themeColor: 'blue' | 'purple' | 'orange';
+  darkMode: boolean;          // Light/Dark mode
+}
+
 export enum OnboardingStep {
   WELCOME = 0,
   INSTRUMENT = 1,
@@ -103,5 +121,6 @@ export enum AppState {
   FEEDBACK = 'FEEDBACK',
   GENERATING = 'GENERATING',
   JAM = 'JAM',
-  WORKOUT = 'WORKOUT'
+  WORKOUT = 'WORKOUT',
+  SETTINGS = 'SETTINGS'
 }

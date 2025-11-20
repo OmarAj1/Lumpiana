@@ -39,6 +39,20 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
     return centerY - (stepsFromB4 * (STAFF_LINE_SPACING / 2));
   };
 
+  const getScaleDegree = (note: NoteName): string => {
+     // Simple C-Major based degree mapping as requested ("Do" = 1)
+     const mapping: Record<string, string> = {
+         'C': '1', 'C#': '1',
+         'D': '2', 'D#': '2',
+         'E': '3',
+         'F': '4', 'F#': '4',
+         'G': '5', 'G#': '5',
+         'A': '6', 'A#': '6',
+         'B': '7'
+     };
+     return mapping[note] || '';
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -116,8 +130,8 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
          let shadowBlur = 0;
 
          if (status === NoteStatus.CORRECT) {
-             fillStyle = '#60a5fa'; // Blue (Correct)
-             shadowColor = '#60a5fa';
+             fillStyle = '#4ade80'; // Green-400 (Correct/Hit)
+             shadowColor = '#4ade80';
              shadowBlur = 15;
          } else if (status === NoteStatus.HINTED) {
              fillStyle = '#facc15'; // Yellow (Waiting/Hint)
@@ -153,6 +167,31 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
          if (noteEvent.note.includes('#')) {
              ctx.font = '14px serif';
              ctx.fillText('♯', x - 20, y + 5);
+         }
+
+         // Draw Scale Degree (Number)
+         let showDegree = true;
+         // Check previous 3 notes for repetition to reduce clutter
+         for (let back = 1; back <= 3; back++) {
+             const prev = songNotes[index - back];
+             if (prev && prev.note === noteEvent.note) {
+                 showDegree = false;
+                 break;
+             }
+         }
+         
+         if (showDegree) {
+             const degree = getScaleDegree(noteEvent.note);
+             if (degree) {
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.font = 'bold 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 2;
+                // Draw slightly above the note head
+                ctx.fillText(degree, x, y - 14);
+                ctx.shadowBlur = 0;
+             }
          }
 
          // Draw Ledger Lines
@@ -198,7 +237,6 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
           ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
           ctx.fill();
           
-          // Connect input to staff if close? No, keep simple.
           if (currentInput.note.includes('#')) {
               ctx.fillStyle = 'rgba(255,255,255,0.5)';
               ctx.font = '14px serif';

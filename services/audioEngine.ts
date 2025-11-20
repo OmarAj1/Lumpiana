@@ -6,17 +6,23 @@ export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private mediaStreamSource: MediaStreamAudioSourceNode | null = null;
+  private inputGainNode: GainNode | null = null; // New: Software Pre-Amp
   private buffer: Float32Array = new Float32Array(2048);
   private isListening: boolean = false;
   private mainGain: GainNode | null = null;
   private currentInstrument: Instrument = Instrument.PIANO;
+  private _micEnabled: boolean = false;
   
   // Config
-  private noiseThreshold: number = 0.02;
+  private noiseThreshold: number = 0.002; // Significantly lowered for better detection
   
   // MIDI State
   private midiAccess: any = null;
   private activeMidiNotes: Map<number, number> = new Map(); // Midi Note Number -> Velocity
+
+  get micEnabled(): boolean {
+    return this._micEnabled;
+  }
 
   async initialize(): Promise<void> {
     if (this.audioContext) {
@@ -36,13 +42,25 @@ export class AudioEngine {
             noiseSuppression: false
           }
         });
+        
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 2048;
-        this.analyser.smoothingTimeConstant = 0.8; // Smooth out jitter
+        this.analyser.smoothingTimeConstant = 0.6; // Lowered slightly for faster attack detection
+
+        // Create Input Booster
+        this.inputGainNode = this.audioContext.createGain();
+        this.inputGainNode.gain.value = 1.5; // Default 1.5x boost
+
         this.mediaStreamSource = this.audioContext.createMediaStreamSource(stream);
-        this.mediaStreamSource.connect(this.analyser);
+        
+        // Chain: Mic -> Gain -> Analyser
+        this.mediaStreamSource.connect(this.inputGainNode);
+        this.inputGainNode.connect(this.analyser);
+        
+        this._micEnabled = true;
       } catch (micErr) {
         console.warn("Microphone access denied or failed. MIDI only mode available if connected.", micErr);
+        this._micEnabled = false;
       }
 
       // 2. Setup Output
@@ -58,6 +76,14 @@ export class AudioEngine {
       console.error("Error initializing AudioEngine:", error);
       throw error;
     }
+  }
+
+  setSensitivity(multiplier: number) {
+      if (this.inputGainNode) {
+          // Map 0.1-3.0 slider to 0.5-5.0 actual gain
+          const gain = Math.max(0.5, multiplier * 1.5);
+          this.inputGainNode.gain.setValueAtTime(gain, this.audioContext?.currentTime || 0);
+      }
   }
 
   async initMidi() {
@@ -94,8 +120,10 @@ export class AudioEngine {
   }
 
   calibrateNoiseFloor(volume: number) {
-      // Simple dynamic adjustment: slightly above ambient noise
-      this.noiseThreshold = Math.max(0.01, volume * 1.2);
+      // Only adjust if volume is significant, preventing silence from setting it to 0
+      if (volume > 0.01) {
+          this.noiseThreshold = volume * 1.1;
+      }
   }
 
   stop() {
@@ -104,6 +132,7 @@ export class AudioEngine {
       this.audioContext.close();
     }
     this.audioContext = null;
+    this._micEnabled = false;
   }
 
   playTone(frequency: number, duration: number, type: OscillatorType = 'sine', time: number = 0) {
@@ -227,7 +256,7 @@ export class AudioEngine {
     return null;
   }
 
-  private autoCorrelate(buf: Float32Array, sampleRate: number): number {
+  private autoCorrelate(buf: Float32Array, sampleRate: number): { pitch: number, clarity: number } {
     const SIZE = buf.length;
     let rms = 0;
     for (let i = 0; i < SIZE; i++) {
@@ -235,7 +264,9 @@ export class AudioEngine {
       rms += val * val;
     }
     rms = Math.sqrt(rms / SIZE);
-    if (rms < this.noiseThreshold) return -1; // Noise Gate
+    
+    // Strict Noise Gate (but threshold is now much lower)
+    if (rms < this.noiseThreshold) return { pitch: -1, clarity: 0 }; 
 
     let r1 = 0, r2 = SIZE - 1;
     const thres = 0.2;
@@ -263,12 +294,19 @@ export class AudioEngine {
       }
     }
     let T0 = maxpos;
+    
+    // Interpolation
     const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
     const a = (x1 + x3 - 2 * x2) / 2;
     const b = (x3 - x1) / 2;
     if (a) T0 = T0 - b / (2 * a);
+    
+    // Clarity calculation (Normalized autocorrelation peak)
+    // c[0] is the energy at 0 lag. 
+    const energy = c[0];
+    const clarity = energy > 0 ? maxval / energy : 0;
 
-    return sampleRate / T0;
+    return { pitch: sampleRate / T0, clarity };
   }
 
   private getNoteFromPitch(frequency: number): { note: NoteName; octave: number; centsOff: number } {
@@ -298,13 +336,13 @@ export class AudioEngine {
     }
 
     // 2. Audio/Mic
-    if (!this.analyser || !this.isListening) {
+    if (!this.analyser || !this.isListening || !this._micEnabled) {
       return { pitch: 0, note: null, octave: null, clarity: 0, volume: 0 };
     }
 
     this.analyser.getFloatTimeDomainData(this.buffer);
     const sampleRate = this.audioContext?.sampleRate || 44100;
-    const pitch = this.autoCorrelate(this.buffer, sampleRate);
+    const { pitch, clarity } = this.autoCorrelate(this.buffer, sampleRate);
 
     let sum = 0;
     for (let i = 0; i < this.buffer.length; i++) {
@@ -317,7 +355,7 @@ export class AudioEngine {
     }
 
     const { note, octave } = this.getNoteFromPitch(pitch);
-    return { pitch, note, octave, clarity: 1, volume, source: 'mic' };
+    return { pitch, note, octave, clarity, volume, source: 'mic' };
   }
 
   getIsMidiConnected(): boolean {

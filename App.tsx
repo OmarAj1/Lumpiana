@@ -1,46 +1,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { audioEngine } from './services/audioEngine';
 import { authService } from './services/authService';
-import { generateLesson, getFeedback, speakText, generateAccompaniment, generateWorkout, generateSongFromTitle } from './services/geminiService';
-import { DEMO_SONG, NOTES_ORDER, TRENDING_SONGS_METADATA, STAR_THRESHOLDS } from './constants';
-import { NoteName, AppState, Song, AudioAnalysisResult, Instrument, User, OnboardingStep, NoteStatus, LoopRegion, AuthView } from './types';
-import PianoKey from './components/PianoKey';
-import SheetMusic from './components/SheetMusic';
-import Fretboard from './components/Fretboard';
-import AuthModal from './components/AuthModal';
-import ThemeToggle from './components/ThemeToggle';
-import Mascot from './components/Mascot';
+import { storageService } from './services/storageService';
+import { getFeedback, speakText, generateAccompaniment, generateWorkout, generateSongFromTitle, stopSpeech } from './services/geminiService';
+import { DEMO_SONG, STAR_THRESHOLDS } from './constants';
+import { AppState, Song, AudioAnalysisResult, Instrument, User, OnboardingStep, NoteStatus, LoopRegion, AuthView, AppSettings } from './types';
 
-// Icons
-const PlayIcon = () => <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>;
-const PauseIcon = () => <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>;
-const SparklesIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>;
-const HeadphonesIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /></svg>;
-const LightningIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
-const CableIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>;
-const CheckIcon = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>;
-const RefreshIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>;
-const SearchIcon = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
-const StarIcon: React.FC<{ filled: boolean }> = ({ filled }) => (
-  <svg className={`w-4 h-4 ${filled ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} viewBox="0 0 20 20" fill="currentColor">
-    <path d="M9.049 2.927c.3-.921 1.603-.921 1.603 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-  </svg>
-);
-
-const COURSES: Song[] = [
-    { ...DEMO_SONG, id: 'c1', title: 'Intro to Rhythm', category: 'Course', description: 'Learn the basics of timing.', difficulty: 'Beginner' },
-    { ...DEMO_SONG, id: 'c2', title: 'Five Finger Scale', category: 'Course', description: 'Master the C position.', difficulty: 'Beginner' },
-    { ...DEMO_SONG, id: 'c3', title: 'First Chords', category: 'Course', description: 'Play C Major and G Major.', difficulty: 'Intermediate' },
-    { ...DEMO_SONG, id: 'c4', title: 'Pop Songs 1', category: 'Course', description: 'Play your first hit.', difficulty: 'Intermediate' },
-];
-
-// Helpers
-const getStars = (songId: string, user: User | null) => {
-    if (!user || !user.progress[songId]) return 0;
-    return user.progress[songId].stars;
-};
+// Screens
+import LandingScreen from './screens/LandingScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
+import MenuScreen from './screens/MenuScreen';
+import GameScreen from './screens/GameScreen';
+import FeedbackScreen from './screens/FeedbackScreen';
+import JamScreen from './screens/JamScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>(AppState.ONBOARDING);
@@ -48,12 +22,17 @@ export default function App() {
   const [currentSong, setCurrentSong] = useState<Song>(DEMO_SONG);
   const [currentInput, setCurrentInput] = useState<AudioAnalysisResult>({ pitch: 0, note: null, octave: null, clarity: 0, volume: 0 });
   const [midiConnected, setMidiConnected] = useState<boolean>(false);
+  const [micError, setMicError] = useState<string>("");
   
   // Auth & User
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<AuthView>('signIn');
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // App Settings & Persistence
+  const [settings, setSettings] = useState<AppSettings>(storageService.getSettings());
+  const [composedSongs, setComposedSongs] = useState<Song[]>([]);
 
   // UI State
   const [activeTab, setActiveTab] = useState('home');
@@ -92,6 +71,7 @@ export default function App() {
   const waitingNoteRef = useRef<string | null>(null);
   const noteResultsRef = useRef<Map<number, NoteStatus>>(new Map());
   const playedBackingChordsRef = useRef<Set<number>>(new Set());
+  const consecutiveHitFramesRef = useRef(0);
 
   const [aiFeedback, setAiFeedback] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -100,6 +80,20 @@ export default function App() {
   const audioAnalysisRef = useRef<number>(0);
 
   // --- EFFECTS ---
+
+  // Apply Dark Mode Setting
+  useEffect(() => {
+      if (settings.darkMode) {
+          document.documentElement.classList.add('dark');
+      } else {
+          document.documentElement.classList.remove('dark');
+      }
+  }, [settings.darkMode]);
+
+  // Apply Audio Sensitivity Setting
+  useEffect(() => {
+      audioEngine.setSensitivity(settings.micSensitivity);
+  }, [settings.micSensitivity]);
 
   // Parallax Mouse Tracker
   useEffect(() => {
@@ -113,24 +107,35 @@ export default function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Load User
+  // Load User & Data
   useEffect(() => {
       authService.getCurrentUser().then(user => {
           if (user) {
               setCurrentUser(user);
-              // If already onboarded or has progress, skip onboarding
               if (user.level > 1 || Object.keys(user.progress).length > 0) {
                   setAppState(AppState.MENU);
                   setOnboardingStep(OnboardingStep.COMPLETE);
               }
           }
       });
+      // Load Composed Songs
+      setComposedSongs(storageService.getComposedSongs());
   }, []);
+
+  // Save settings when changed
+  useEffect(() => {
+      storageService.saveSettings(settings);
+  }, [settings]);
 
   // Handle Instrument Switch
   useEffect(() => {
     audioEngine.setInstrument(selectedInstrument);
   }, [selectedInstrument]);
+
+  // Stop speech on unmount or state change
+  useEffect(() => {
+      return () => stopSpeech();
+  }, [appState]);
 
   // Audio Loop
   useEffect(() => {
@@ -143,7 +148,7 @@ export default function App() {
         inputRef.current = analysis;
         
         // Jam Mode Collection
-        if (appState === AppState.JAM && analysis.note && analysis.clarity > 0.9) {
+        if (appState === AppState.JAM && analysis.note && analysis.clarity > 0.8) {
           const noteStr = `${analysis.note}${analysis.octave}`;
           const last = recentNotesRef.current[recentNotesRef.current.length - 1];
           if (last !== noteStr) {
@@ -195,7 +200,7 @@ export default function App() {
       }
 
       let currentlyWaiting = false;
-      let targetNoteStr = null;
+      let targetNoteStr: string | null = null;
 
       // BACKING TRACK PLAYER
       if (currentSong.backingTrack) {
@@ -208,42 +213,62 @@ export default function App() {
           });
       }
 
-      // Hit Detection
+      // Strict Wait & Hit Detection
       if (currentSong.notes && currentSong.notes.length > 0) {
-        currentSong.notes.forEach((note, index) => {
-          if (noteResultsRef.current.has(index)) return;
+        for (let index = 0; index < currentSong.notes.length; index++) {
+            const note = currentSong.notes[index];
+            // STRICT CHECK: Only skip if explicitly CORRECT. HINTED/MISSED must re-eval to hold lock.
+            if (noteResultsRef.current.get(index) === NoteStatus.CORRECT) continue;
 
-          // Missed
-          if (newTime > note.startTime + 0.5) {
-              noteResultsRef.current.set(index, NoteStatus.MISSED);
-              setNoteResults(new Map(noteResultsRef.current));
-              setMisses(m => m + 1);
-              return;
-          }
+            // If the time has come to play this note
+            if (newTime >= note.startTime) {
+                const input = inputRef.current;
+                
+                // Lowered default threshold to catch acoustic piano attacks better
+                const requiredClarity = settings.strictMode ? 0.95 : 0.75;
 
-          // Hit
-          if (newTime >= note.startTime - 0.1 && newTime <= note.startTime + 0.5) {
-             const input = inputRef.current;
-             const isHit = input.note === note.note && input.octave === note.octave && input.clarity > 0.8;
-             
-             if (isHit) {
-                 noteResultsRef.current.set(index, NoteStatus.CORRECT);
-                 setNoteResults(new Map(noteResultsRef.current));
-                 setScore(s => s + 100);
-             } else if (newTime > note.startTime) {
-                 if (currentSong.difficulty === 'Beginner') {
-                     currentlyWaiting = true;
-                     targetNoteStr = `${note.note}${note.octave}`;
-                     noteResultsRef.current.set(index, NoteStatus.HINTED);
-                     setNoteResults(new Map(noteResultsRef.current));
-                 }
-             }
-          }
-        });
+                const isMatchingNote = input.note === note.note && 
+                                     input.octave === note.octave && 
+                                     input.clarity > requiredClarity;
+
+                if (isMatchingNote) {
+                    consecutiveHitFramesRef.current += 1;
+                } else {
+                    consecutiveHitFramesRef.current = 0;
+                }
+
+                // Require only 1 frame for instant response (crucial for staccato notes)
+                const isHit = isMatchingNote && consecutiveHitFramesRef.current >= 1;
+
+                if (isHit) {
+                    noteResultsRef.current.set(index, NoteStatus.CORRECT);
+                    setNoteResults(new Map(noteResultsRef.current));
+                    setScore(s => s + 100);
+                    
+                    consecutiveHitFramesRef.current = 0; 
+
+                    // NOTE: Lyrics control remains separate from Voice Feedback
+                    if (note.lyrics && settings.enableTTS) {
+                        const utterance = new SpeechSynthesisUtterance(note.lyrics);
+                        utterance.rate = 1.2;
+                        window.speechSynthesis.speak(utterance);
+                    }
+
+                    currentlyWaiting = false;
+                } else {
+                    // BLOCKING: Clamp time exactly to note start
+                    newTime = note.startTime; 
+                    currentlyWaiting = true;
+                    targetNoteStr = `${note.note}${note.octave}`;
+                    noteResultsRef.current.set(index, NoteStatus.HINTED);
+                    setNoteResults(new Map(noteResultsRef.current));
+                    break; 
+                }
+            }
+        }
       }
 
       if (currentlyWaiting) {
-          newTime = currentTimeRef.current; // Freeze
           if (targetNoteStr && waitingNoteRef.current !== targetNoteStr) {
               waitingNoteRef.current = targetNoteStr;
               audioEngine.playPedal(targetNoteStr, 0.1);
@@ -267,7 +292,7 @@ export default function App() {
 
     animationFrameRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animationFrameRef.current);
-  }, [appState, isPlaying, currentSong, playbackSpeed, loopRegion]);
+  }, [appState, isPlaying, currentSong, playbackSpeed, loopRegion, settings]);
 
   // Jam Loop
   useEffect(() => {
@@ -299,6 +324,16 @@ export default function App() {
 
   // --- ACTIONS ---
 
+  const handleSpeak = (text: string) => {
+      if (settings.enableVoiceFeedback) {
+          speakText(text);
+      }
+  };
+
+  const toggleTheme = () => {
+      setSettings(prev => ({ ...prev, darkMode: !prev.darkMode }));
+  };
+
   const openAuthModal = (view: AuthView) => {
       setAuthModalView(view);
       setAuthModalOpen(true);
@@ -317,10 +352,19 @@ export default function App() {
           setOnboardingStep(OnboardingStep.INSTRUMENT);
       } else if (onboardingStep === OnboardingStep.INSTRUMENT) {
           setOnboardingStep(OnboardingStep.AUDIO_SETUP);
-          await audioEngine.initialize();
+          try {
+            await audioEngine.initialize();
+            if (!audioEngine.micEnabled && !audioEngine.getIsMidiConnected()) {
+                setMicError("Microphone access denied. Please check your browser permissions or connect a MIDI device.");
+            } else {
+                setMicError("");
+            }
+          } catch (e) {
+             console.error(e);
+             setMicError("Failed to initialize audio. Please refresh and try again.");
+          }
       } else if (onboardingStep === OnboardingStep.AUDIO_SETUP) {
           setOnboardingStep(OnboardingStep.COMPLETE);
-          // Don't auto-advance to MENU if not logged in, let renderLanding handle it
           setTimeout(() => {
             setAppState(AppState.MENU);
           }, 1000);
@@ -328,6 +372,7 @@ export default function App() {
   };
 
   const startSong = (song: Song) => {
+    stopSpeech();
     setCurrentSong(song);
     setScore(0);
     setMisses(0);
@@ -337,62 +382,70 @@ export default function App() {
     setNoteResults(new Map());
     setCurrentTimeInBeats(0);
     setIsPlaying(true);
-    setPlaybackSpeed(1.0);
-    setLoopRegion({ start: 0, end: 4, active: false }); 
+    
+    // Apply Settings Defaults
+    setPlaybackSpeed(settings.defaultSpeed);
+    setLoopRegion({ start: 0, end: 4, active: settings.enableLooping }); 
+    
     setAppState(AppState.PLAYING);
-    speakText(`Let's play ${song.title}.`);
   };
 
   const startJam = () => {
+    stopSpeech();
     setAppState(AppState.JAM);
-    speakText("Jam mode activated.");
   };
 
   const finishLesson = async () => {
     setIsPlaying(false);
     setAppState(AppState.FEEDBACK);
     
-    // Calculate Stars
     const totalNotes = currentSong.notes.length;
-    const accuracy = totalNotes > 0 ? (totalNotes - misses) / totalNotes : 0;
+    let hits = 0;
+    noteResultsRef.current.forEach(val => { if (val === NoteStatus.CORRECT) hits++; });
+    
+    const accuracy = totalNotes > 0 ? hits / totalNotes : 0;
+    
     let stars = 0;
     if (accuracy >= STAR_THRESHOLDS.GOLD) stars = 3;
     else if (accuracy >= STAR_THRESHOLDS.SILVER) stars = 2;
     else if (accuracy >= STAR_THRESHOLDS.BRONZE) stars = 1;
 
-    // Update User Progress if logged in
     if (currentUser) {
         try {
             const updatedUser = await authService.updateUserProgress(currentUser.id, currentSong.id, {
                 highScore: score,
                 stars: stars
-            }, score); // Gain XP equal to score
+            }, score);
             setCurrentUser(updatedUser);
         } catch (e) {
             console.error("Failed to save progress", e);
         }
     }
 
-    const feedback = await getFeedback(score, misses);
+    const feedback = await getFeedback(score, totalNotes - hits);
     setAiFeedback(feedback || "Good job!");
-    speakText(feedback || "Lesson complete.");
+    handleSpeak(feedback || "Lesson complete."); // Keep this one as it's valuable feedback
   };
 
   const handleGenerateWorkout = async () => {
+      stopSpeech();
       setIsGenerating(true);
-      speakText("Preparing your 5-minute workout.");
       try {
         const workout = await generateWorkout();
         if (workout) {
             const song: Song = {
-            id: 'workout-ai',
-            title: workout.title || 'Daily Technical Drill',
-            artist: 'Gemini Coach',
-            difficulty: 'Intermediate',
-            bpm: workout.bpm || 80,
-            notes: workout.notes || [],
-            category: 'Workout'
+                id: `workout-${Date.now()}`,
+                title: workout.title || 'Daily Technical Drill',
+                artist: 'Gemini Coach',
+                difficulty: 'Intermediate',
+                bpm: workout.bpm || 80,
+                notes: workout.notes || [],
+                category: 'Workout'
             };
+            if (settings.autoSaveSongs) {
+                storageService.saveComposedSong(song);
+                setComposedSongs(storageService.getComposedSongs());
+            }
             setCurrentSong(song);
             startSong(song);
         } else {
@@ -407,8 +460,8 @@ export default function App() {
 
   const handleSongGeneration = async (title: string, artist?: string) => {
       if (!title.trim()) return;
+      stopSpeech();
       setIsGenerating(true);
-      speakText(`Retrieving sheet music for ${title}.`);
       try {
         const result = await generateSongFromTitle(title, artist);
         
@@ -423,10 +476,15 @@ export default function App() {
                 backingTrack: result.backingTrack || [],
                 category: 'Song'
             };
+            
+            if (settings.autoSaveSongs) {
+                storageService.saveComposedSong(generatedSong);
+                setComposedSongs(storageService.getComposedSongs());
+            }
+
             startSong(generatedSong);
         } else {
-            speakText("Sorry, I couldn't retrieve that score.");
-            alert(`Could not generate "${title}". \n\nTry adding "Op." or "No." for classical pieces.`);
+            alert(`Could not generate "${title}".`);
         }
       } catch (e) {
           console.error(e);
@@ -436,582 +494,63 @@ export default function App() {
       }
   };
 
-  // --- SCREENS ---
+  // --- RENDER SWITCH ---
+  
+  if (!currentUser && appState === AppState.MENU) {
+      return <LandingScreen 
+                isAuthModalOpen={isAuthModalOpen} setAuthModalOpen={setAuthModalOpen}
+                authModalView={authModalView} openAuthModal={openAuthModal}
+                setCurrentUser={setCurrentUser} setAppState={setAppState}
+             />;
+  }
 
-  const renderLanding = () => (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-surface-primary dark:bg-dark-surface-primary text-white relative overflow-hidden transition-colors duration-300">
-        <div className="absolute inset-0 pointer-events-none">
-             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full" />
-             <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-violet-600/20 blur-[120px] rounded-full" />
-        </div>
-        <div className="z-10 text-center space-y-8 max-w-md p-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-violet-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-500/30 mb-6">
-                <SparklesIcon />
-            </div>
-            <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">Luma</h1>
-            <p className="text-gray-400 text-lg">Sign in to unlock your personal AI music tutor.</p>
-            
-            <div className="space-y-4 w-full">
-                <button 
-                    onClick={() => openAuthModal('signIn')}
-                    className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-105 transition-transform"
-                >
-                    Sign In
-                </button>
-                <button 
-                    onClick={() => openAuthModal('signUp')}
-                    className="w-full py-4 bg-white/5 text-white border border-white/10 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
-                >
-                    Create Account
-                </button>
-            </div>
-        </div>
-        <AuthModal 
-            isOpen={isAuthModalOpen} 
-            onClose={() => setAuthModalOpen(false)} 
-            initialView={authModalView} 
-            onAuthSuccess={(user) => {
-                setCurrentUser(user);
-                setAuthModalOpen(false);
-                setAppState(AppState.MENU);
-            }}
-        />
-    </div>
-  );
-
-  const renderOnboarding = () => (
-      <div className="flex flex-col items-center justify-center h-screen bg-surface-primary text-center p-8">
-          <div className="w-full max-w-md">
-              {onboardingStep === OnboardingStep.WELCOME && (
-                  <div className="space-y-6 animate-fade-in">
-                       <div className="w-20 h-20 bg-blue-500 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-500/30">
-                           <SparklesIcon />
-                       </div>
-                       <h1 className="text-4xl font-bold text-white">Welcome to Luma</h1>
-                       <p className="text-gray-400">Your AI-powered music tutor. Let's get you set up.</p>
-                       <button onClick={handleOnboardingNext} className="w-full py-4 bg-white text-black rounded-full font-bold text-lg hover:scale-105 transition-all">Get Started</button>
-                       <p className="text-xs text-gray-500">
-                           Already have an account? <button onClick={() => openAuthModal('signIn')} className="text-blue-400 font-bold">Sign In</button>
-                       </p>
-                       <AuthModal 
-                            isOpen={isAuthModalOpen} 
-                            onClose={() => setAuthModalOpen(false)} 
-                            initialView={authModalView} 
-                            onAuthSuccess={(user) => {
-                                setCurrentUser(user);
-                                setAuthModalOpen(false);
-                                setAppState(AppState.MENU);
-                            }}
-                        />
-                  </div>
-              )}
-
-              {onboardingStep === OnboardingStep.INSTRUMENT && (
-                   <div className="space-y-8 animate-fade-in">
-                       <h2 className="text-3xl font-bold text-white">Choose your instrument</h2>
-                       <div className="grid grid-cols-2 gap-4">
-                           <button 
-                             onClick={() => setSelectedInstrument(Instrument.PIANO)}
-                             className={`p-6 rounded-2xl border-2 transition-all ${selectedInstrument === Instrument.PIANO ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-surface-secondary'}`}
-                           >
-                               <div className="text-4xl mb-2">🎹</div>
-                               <div className="font-bold text-white">Piano</div>
-                           </button>
-                           <button 
-                             onClick={() => setSelectedInstrument(Instrument.GUITAR)}
-                             className={`p-6 rounded-2xl border-2 transition-all ${selectedInstrument === Instrument.GUITAR ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-surface-secondary'}`}
-                           >
-                               <div className="text-4xl mb-2">🎸</div>
-                               <div className="font-bold text-white">Guitar</div>
-                           </button>
-                       </div>
-                       <button onClick={handleOnboardingNext} className="w-full py-4 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-500 transition-all">Next</button>
-                   </div>
-              )}
-
-              {onboardingStep === OnboardingStep.AUDIO_SETUP && (
-                  <div className="space-y-6 animate-fade-in">
-                      <h2 className="text-3xl font-bold text-white">Sound Check</h2>
-                      <p className="text-gray-400">Play a note or connect MIDI.</p>
-                      
-                      <div className="h-32 bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center relative overflow-hidden">
-                          <div className="absolute bottom-0 left-0 right-0 bg-blue-500 transition-all duration-75 ease-out" style={{ height: `${Math.min(100, currentInput.volume * 500)}%`, opacity: 0.5 }} />
-                          <div className="z-10 text-2xl font-mono font-bold text-white">
-                              {currentInput.note ? `${currentInput.note}${currentInput.octave}` : '...'}
-                          </div>
-                      </div>
-                      
-                      {midiConnected && (
-                          <div className="flex items-center gap-2 justify-center text-green-400 bg-green-400/10 py-2 rounded-lg">
-                              <CableIcon /> MIDI Connected
-                          </div>
-                      )}
-
-                      <button onClick={handleOnboardingNext} className="w-full py-4 bg-white text-black rounded-full font-bold hover:scale-105 transition-all">Looks Good</button>
-                  </div>
-              )}
-              
-              {onboardingStep === OnboardingStep.COMPLETE && (
-                  <div className="space-y-6 animate-fade-in text-center">
-                      <div className="w-20 h-20 bg-green-500 rounded-full mx-auto flex items-center justify-center text-white">
-                          <CheckIcon />
-                      </div>
-                      <h2 className="text-3xl font-bold text-white">All Set!</h2>
-                  </div>
-              )}
-          </div>
-      </div>
-  );
-
-  const renderMenu = () => {
-    // Force Auth: If not signed in, show landing page instead of dashboard
-    if (!currentUser) return renderLanding();
-
-    return (
-    <div className="h-screen bg-surface-primary dark:bg-dark-surface-primary text-text-primary dark:text-dark-text-primary font-sans flex flex-col transition-colors duration-300 overflow-hidden relative">
-      
-      {/* Background Parallax */}
-      <motion.div 
-        className="absolute inset-0 pointer-events-none opacity-20"
-        animate={{ x: parallax.x, y: parallax.y }}
-        transition={{ type: 'spring', stiffness: 100, damping: 30 }}
-      >
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/30 blur-[100px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600/30 blur-[100px] rounded-full" />
-      </motion.div>
-
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 w-full max-w-5xl mx-auto px-4 pt-4">
-          <div className="w-full bg-surface-primary/80 dark:bg-dark-surface-primary/80 p-4 rounded-2xl shadow-2xl backdrop-blur-xl border border-border-primary dark:border-dark-border-primary flex justify-between items-center">
-                <div className="text-left">
-                    <h1 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-start to-brand-end dark:from-dark-brand-start dark:to-dark-brand-end">
-                        Luma
-                    </h1>
-                </div>
-                <div className="flex items-center gap-4 relative z-50">
-                  <ThemeToggle />
-                  <div className="relative">
-                    <div className="flex items-center gap-4">
-                            <div className="hidden md:block text-right">
-                            <div className="text-[10px] text-text-secondary dark:text-dark-text-secondary font-bold uppercase tracking-wider">Streak</div>
-                            <div className="font-mono flex items-center gap-1 justify-end text-sm"><LightningIcon/> {currentUser.streak}</div>
-                        </div>
-                        <button
-                            onClick={() => setShowUserMenu(prev => !prev)}
-                            className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-start to-brand-end text-white flex items-center justify-center font-bold text-lg border border-white/20 shadow-lg"
-                        >
-                            {currentUser.name.charAt(0).toUpperCase()}
-                        </button>
-                    </div>
-                    
-                    <AnimatePresence>
-                    {showUserMenu && (
-                        <>
-                        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" onClick={() => setShowUserMenu(false)} />
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute top-14 right-0 bg-surface-secondary dark:bg-dark-surface-secondary rounded-2xl shadow-2xl p-2 w-56 border border-border-primary dark:border-dark-border-primary z-50"
-                        >
-                            <div className="p-3 border-b border-white/5">
-                                <p className="font-bold truncate">{currentUser.name}</p>
-                                <p className="text-xs text-text-secondary dark:text-dark-text-secondary truncate">@{currentUser.tag}</p>
-                                {currentUser.isAdmin && <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded uppercase font-bold mt-1 inline-block">Admin</span>}
-                            </div>
-                            <div className="p-2">
-                                <div className="flex justify-between text-sm text-text-secondary dark:text-dark-text-secondary mb-2">
-                                    <span>Level {currentUser.level}</span>
-                                    <span>{currentUser.xp} XP</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mb-2">
-                                    <div className="h-full bg-brand-start" style={{ width: `${(currentUser.xp % 1000) / 10}%` }} />
-                                </div>
-                            </div>
-                            <button onClick={signOut} className="w-full text-left px-3 py-2 text-sm text-red-300 hover:bg-white/5 rounded-lg transition">
-                                Sign Out
-                            </button>
-                        </motion.div>
-                        </>
-                    )}
-                    </AnimatePresence>
-                </div>
-                  <Mascot onClick={() => {}} />
-                </div>
-            </div>
-      </header>
-
-      {/* TABS */}
-      <nav className="flex justify-center gap-2 mt-6 relative z-30 flex-shrink-0">
-          {['home', 'library', 'create'].map((tab) => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-2 rounded-full text-sm font-bold transition-all capitalize ${activeTab === tab ? 'bg-white text-black shadow-lg scale-105' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-              >
-                  {tab}
-              </button>
-          ))}
-      </nav>
-
-      <main className="flex-1 overflow-y-auto p-6 md:p-12 max-w-5xl mx-auto w-full relative z-10 scroll-smooth">
-        <AnimatePresence mode='wait'>
-            <motion.div
-               key={activeTab}
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: -20 }}
-               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-               className="space-y-12 pb-12"
-            >
-                {activeTab === 'home' && (
-                    <>
-                        <section>
-                            <h2 className="text-2xl font-bold mb-6">Your Learning Path</h2>
-                            <div className="space-y-4 relative">
-                                <div className="absolute left-8 top-0 bottom-0 w-1 bg-gray-800 dark:bg-gray-200 -z-10" />
-                                {COURSES.map((course, idx) => {
-                                    const stars = getStars(course.id, currentUser);
-                                    return (
-                                        <div key={course.id} className="relative pl-20 py-2">
-                                            <div className={`absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-4 ${stars > 0 ? 'border-yellow-400 bg-yellow-400' : 'border-gray-600 bg-surface-primary dark:bg-white'} z-10`} />
-                                            <div 
-                                                onClick={() => startSong(course)}
-                                                className="bg-surface-secondary/50 dark:bg-dark-surface-secondary/50 backdrop-blur border border-border-primary dark:border-dark-border-primary rounded-2xl p-5 flex justify-between items-center hover:border-blue-500/50 hover:bg-white/5 transition-all cursor-pointer group"
-                                            >
-                                                <div>
-                                                    <div className="flex items-center gap-3 mb-1">
-                                                        <h3 className="text-lg font-bold group-hover:text-brand-start transition-colors">{course.title}</h3>
-                                                        <div className="flex">
-                                                            {[1,2,3].map(s => <StarIcon key={s} filled={s <= stars} />)}
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-sm text-text-secondary dark:text-dark-text-secondary">{course.description}</p>
-                                                </div>
-                                                <button className="bg-white text-black dark:bg-black dark:text-white px-6 py-2 rounded-full font-bold text-sm hover:scale-105 transition-transform">Start</button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </section>
-
-                        <section>
-                            <h2 className="text-2xl font-bold mb-6">Quick Picks</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {TRENDING_SONGS_METADATA.slice(0, 4).map((song, idx) => (
-                                     <div 
-                                        key={idx}
-                                        onClick={() => handleSongGeneration(song.title, song.artist)}
-                                        className="bg-surface-secondary/40 dark:bg-dark-surface-secondary/40 border border-border-primary dark:border-dark-border-primary rounded-2xl p-4 hover:bg-white/10 cursor-pointer transition-all"
-                                     >
-                                         <h3 className="font-bold text-sm truncate">{song.title}</h3>
-                                         <p className="text-xs text-text-secondary dark:text-dark-text-secondary truncate">{song.artist}</p>
-                                     </div>
-                                ))}
-                            </div>
-                        </section>
-                    </>
-                )}
-
-                {activeTab === 'library' && (
-                     <>
-                        <section className="bg-gradient-to-br from-violet-900/40 to-fuchsia-900/40 dark:from-violet-100 dark:to-fuchsia-100 p-8 rounded-3xl border border-border-primary dark:border-dark-border-primary relative overflow-hidden mb-8">
-                            <div className="relative z-20">
-                                <div className="flex items-center gap-3 text-fuchsia-300 dark:text-fuchsia-600 font-bold uppercase tracking-widest text-xs mb-4">
-                                    <SparklesIcon /> AI Library
-                                </div>
-                                <h2 className="text-3xl font-bold mb-4 text-white dark:text-gray-800">Find Any Song</h2>
-                                <div className="flex gap-2 max-w-lg relative z-30">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search IMSLP or Charts..." 
-                                        value={songSearchQuery}
-                                        onChange={(e) => setSongSearchQuery(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSongGeneration(songSearchQuery)}
-                                        className="flex-1 bg-black/40 dark:bg-white/60 backdrop-blur border border-white/20 rounded-xl px-5 py-3 text-white dark:text-black placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-fuchsia-500 transition-colors"
-                                    />
-                                    <button 
-                                        onClick={() => handleSongGeneration(songSearchQuery)}
-                                        disabled={!songSearchQuery}
-                                        className="bg-fuchsia-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-fuchsia-400 transition-colors disabled:opacity-50"
-                                    >
-                                        <SearchIcon />
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {TRENDING_SONGS_METADATA.map((song, idx) => {
-                                const songId = `gen-${song.title.replace(/\s+/g,'-').toLowerCase()}`;
-                                const stars = getStars(songId, currentUser);
-                                return (
-                                    <div 
-                                        key={idx}
-                                        onClick={() => handleSongGeneration(song.title, song.artist)}
-                                        className="bg-surface-secondary dark:bg-dark-surface-secondary border border-border-primary dark:border-dark-border-primary rounded-2xl p-4 hover:bg-white/5 hover:border-white/20 transition-all cursor-pointer group"
-                                    >
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xs font-bold">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="flex gap-0.5">
-                                                {[1,2,3].map(s => <StarIcon key={s} filled={s <= stars} />)}
-                                            </div>
-                                        </div>
-                                        <h3 className="font-bold truncate">{song.title}</h3>
-                                        <p className="text-sm text-text-secondary dark:text-dark-text-secondary truncate">{song.artist}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                     </>
-                )}
-
-                {activeTab === 'create' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div onClick={handleGenerateWorkout} className="relative group cursor-pointer overflow-hidden rounded-3xl p-1 bg-gradient-to-br from-orange-400 to-red-500">
-                            <div className="bg-surface-secondary dark:bg-dark-surface-secondary h-full w-full rounded-[1.3rem] p-8 relative z-10 flex flex-col justify-between min-h-[200px]">
-                                <div>
-                                    <div className="text-orange-400 font-bold text-xs tracking-widest uppercase mb-2">AI Generator</div>
-                                    <h3 className="text-2xl font-bold mb-2">5-Minute Workout</h3>
-                                    <p className="text-text-secondary dark:text-dark-text-secondary">Generate a personalized technical drill focused on your weak points.</p>
-                                </div>
-                                <div className="self-end w-12 h-12 bg-orange-500/20 rounded-full flex items-center justify-center text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all">
-                                    <PlayIcon />
-                                </div>
-                            </div>
-                        </div>
-                        <div onClick={startJam} className="relative group cursor-pointer overflow-hidden rounded-3xl p-1 bg-gradient-to-br from-fuchsia-500 to-purple-600">
-                            <div className="bg-surface-secondary dark:bg-dark-surface-secondary h-full w-full rounded-[1.3rem] p-8 relative z-10 flex flex-col justify-between min-h-[200px]">
-                                <div>
-                                    <div className="text-fuchsia-400 font-bold text-xs tracking-widest uppercase mb-2">Creative</div>
-                                    <h3 className="text-2xl font-bold mb-2">Jam Mode</h3>
-                                    <p className="text-text-secondary dark:text-dark-text-secondary">Improvise freely while AI generates an ambient backing track for you.</p>
-                                </div>
-                                <div className="self-end w-12 h-12 bg-fuchsia-500/20 rounded-full flex items-center justify-center text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white transition-all">
-                                    <HeadphonesIcon />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </motion.div>
-        </AnimatePresence>
-      </main>
-
-      {isGenerating && (
-         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-lg flex flex-col items-center justify-center animate-fade-in text-center p-4">
-             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6" />
-             <h2 className="text-3xl font-bold text-white mb-2">Composing...</h2>
-             <p className="text-gray-400">Gemini is writing your sheet music.</p>
-         </div>
-      )}
-    </div>
-  );
-  };
-
-  const renderPlaying = () => (
-    <div className="flex flex-col h-screen bg-surface-primary relative overflow-hidden">
-      {/* SCORE HEADER */}
-      <div className="absolute top-0 left-0 right-0 p-6 z-20 flex justify-between items-start pointer-events-none">
-        <div className="bg-black/60 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 shadow-xl">
-           <div className="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-1">Score</div>
-           <div className="text-4xl font-mono font-bold text-blue-400">{score}</div>
-        </div>
-        <div className={`absolute left-1/2 -translate-x-1/2 top-20 transition-all duration-300 ${isWaiting ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-            <div className="bg-yellow-500/10 border border-yellow-500/50 text-yellow-300 px-6 py-2 rounded-full font-bold shadow-lg backdrop-blur flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                Play <span className="font-mono bg-black/20 px-1 rounded">{waitingNoteRef.current}</span>
-            </div>
-        </div>
-        <div className="pointer-events-auto bg-black/60 backdrop-blur-xl px-6 py-2 rounded-2xl border border-white/10 text-right">
-            <h3 className="font-bold text-white">{currentSong.title}</h3>
-            <p className="text-xs text-gray-400">{currentSong.artist}</p>
-        </div>
-      </div>
-
-      {/* PRACTICE TOOLS */}
-      <div className="absolute bottom-[35vh] left-8 z-40 flex flex-col gap-4 pointer-events-auto w-64 mb-4">
-         <div className="bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-             <div className="flex justify-between text-xs font-bold text-gray-400 mb-2">
-                <span>SPEED</span>
-                <span>{Math.round(playbackSpeed * 100)}%</span>
-             </div>
-             <input 
-                type="range" min="0.5" max="1.2" step="0.1" 
-                value={playbackSpeed} 
-                onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
-             />
-         </div>
-         <div className={`bg-black/60 backdrop-blur-md p-4 rounded-2xl border transition-colors cursor-pointer ${loopRegion.active ? 'border-blue-500 bg-blue-900/20' : 'border-white/10'}`}
-              onClick={() => setLoopRegion(prev => ({ ...prev, active: !prev.active }))}>
-             <div className="flex justify-between items-center">
-                 <div className="flex items-center gap-2 text-sm font-bold text-white">
-                     <RefreshIcon /> Loop Practice
-                 </div>
-                 <div className={`w-8 h-4 rounded-full relative ${loopRegion.active ? 'bg-blue-500' : 'bg-gray-600'}`}>
-                     <div className={`absolute top-0.5 bottom-0.5 w-3 rounded-full bg-white transition-all ${loopRegion.active ? 'left-4.5' : 'left-0.5'}`} />
-                 </div>
-             </div>
-             {loopRegion.active && (
-                 <div className="mt-3">
-                     <input 
-                        type="range" min="0" max={currentSong.notes.length > 0 ? currentSong.notes[currentSong.notes.length-1].startTime : 30} step="1"
-                        value={loopRegion.start}
-                        onChange={(e) => {e.stopPropagation(); setLoopRegion(p => ({...p, start: parseInt(e.target.value)}))}}
-                        className="w-full h-1 bg-gray-600 rounded-lg accent-blue-400 mb-2"
-                     />
-                     <div className="flex justify-between text-xs text-gray-400">
-                         <span>Start: {loopRegion.start}</span>
-                         <span>End: {loopRegion.end}</span>
-                     </div>
-                 </div>
-             )}
-         </div>
-      </div>
-
-      <div className="flex-1 relative w-full bg-black/40">
-        <SheetMusic 
-          songNotes={currentSong.notes}
-          isPlaying={isPlaying}
-          currentTime={currentTimeInBeats}
-          currentInput={currentInput}
-          results={noteResults}
-          bpm={currentSong.bpm * playbackSpeed}
-          loopRegion={loopRegion}
-        />
-      </div>
-
-      <div className="w-full max-w-7xl mx-auto z-30 p-4 pb-0 relative">
-         <div className="absolute bottom-0 left-0 right-0 h-32 bg-blue-900/20 blur-[50px] pointer-events-none" />
-         <div className="relative z-20">
-             {selectedInstrument === Instrument.GUITAR 
-               ? <Fretboard currentInput={currentInput} targetNote={null} />
-               : (
-                  <div className="relative w-full h-[33vh] select-none bg-gray-950 p-3 rounded-t-xl shadow-2xl border-t-4 border-gray-800 flex justify-center">
-                    <div className="flex w-full max-w-6xl h-full bg-gray-900 shadow-inner">
-                        {/* OCTAVE LOOP [3, 4, 5] */}
-                        {[3,4,5].map(octave => (
-                            <div key={octave} className="relative flex-1 flex h-full border-r-2 border-gray-900 last:border-r-0">
-                                {/* White Keys Layer */}
-                                {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note) => {
-                                    const fullNote = note as NoteName;
-                                    const isActive = currentInput.note === fullNote && currentInput.octave === octave;
-                                    return (
-                                        <PianoKey
-                                            key={`${note}${octave}`}
-                                            note={fullNote}
-                                            isBlack={false}
-                                            isActive={isActive}
-                                            label={note === 'C' ? `C${octave}` : ''}
-                                            className="flex-1"
-                                        />
-                                    );
-                                })}
-                                
-                                {/* Black Keys Layer (Overlay) */}
-                                {[
-                                    { note: 'C#', left: '10%' }, 
-                                    { note: 'D#', left: '24%' }, 
-                                    { note: 'F#', left: '53%' }, 
-                                    { note: 'G#', left: '67%' }, 
-                                    { note: 'A#', left: '81%' }
-                                ].map(({ note, left }) => {
-                                     const fullNote = note as NoteName; 
-                                     const isActive = currentInput.note === fullNote && currentInput.octave === octave;
-                                     
-                                     return (
-                                        <PianoKey
-                                            key={`${note}${octave}`}
-                                            note={fullNote}
-                                            isBlack={true}
-                                            isActive={isActive}
-                                            style={{ left: left, width: '8%' }}
-                                        />
-                                     );
-                                })}
-                            </div>
-                        ))}
-                    </div>
-                  </div>
-               )
-             }
-         </div>
-      </div>
-
-       <div className="absolute bottom-[35vh] right-8 z-40 flex flex-col gap-4 pointer-events-auto mb-4">
-          <button onClick={() => setIsPlaying(!isPlaying)} className="w-16 h-16 flex items-center justify-center rounded-full bg-white text-black shadow-2xl hover:scale-105 transition-transform">
-            {isPlaying ? <PauseIcon /> : <PlayIcon />}
-          </button>
-          <button onClick={() => setAppState(AppState.MENU)} className="w-16 h-16 flex items-center justify-center rounded-full bg-black/50 backdrop-blur border border-white/20 text-white font-medium hover:bg-white/10 transition-colors">EXIT</button>
-       </div>
-    </div>
-  );
-
-  const renderFeedback = () => (
-    <div className="flex flex-col items-center justify-center h-screen bg-surface-primary p-6 relative">
-      <div className="max-w-xl w-full bg-surface-secondary/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-10 shadow-2xl text-center">
-        <h2 className="text-4xl font-bold mb-2 text-white">Lesson Complete</h2>
-        
-        <div className="flex justify-center gap-2 my-6">
-             {(() => {
-                 const acc = currentSong.notes.length > 0 ? (currentSong.notes.length - misses) / currentSong.notes.length : 0;
-                 return [1,2,3].map(s => (
-                     <StarIcon key={s} filled={acc >= [0.5, 0.75, 0.9][s-1]} />
-                 ));
-             })()}
-        </div>
-
-        <div className="flex justify-center gap-8 mb-10">
-            <div className="text-center">
-                <div className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Score</div>
-                <div className="text-5xl font-mono font-bold text-blue-400">{score}</div>
-            </div>
-            <div className="text-center">
-                <div className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Misses</div>
-                <div className="text-5xl font-mono font-bold text-red-400">{misses}</div>
-            </div>
-        </div>
-        <div className="bg-white/5 rounded-2xl p-8 mb-8 text-left border border-white/5">
-          <div className="flex items-center gap-2 text-blue-300 mb-3 font-bold text-xs uppercase tracking-widest">
-             <SparklesIcon /> Gemini Coach
-          </div>
-          <p className="text-lg leading-relaxed font-light text-gray-200">"{aiFeedback || "Analyzing..."}"</p>
-        </div>
-        <div className="flex gap-4 justify-center">
-          <button onClick={() => startSong(currentSong)} className="px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors font-semibold border border-white/10">Replay</button>
-          <button onClick={() => setAppState(AppState.MENU)} className="px-8 py-4 rounded-xl bg-white text-black hover:bg-gray-200 transition-colors font-bold">Continue</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (appState === AppState.ONBOARDING) return renderOnboarding();
-
-  return (
-     <>
-       {appState === AppState.MENU && renderMenu()}
-       {appState === AppState.PLAYING && renderPlaying()}
-       {appState === AppState.FEEDBACK && renderFeedback()}
-       {appState === AppState.JAM && (
-           <div className="flex flex-col h-screen bg-surface-primary relative overflow-hidden">
-               <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                   <div className="w-32 h-32 rounded-full bg-fuchsia-500/20 animate-pulse flex items-center justify-center mb-8">
-                       <HeadphonesIcon />
-                   </div>
-                   <h1 className="text-5xl font-bold text-white mb-4">Jamming...</h1>
-                   <p className="text-xl text-gray-400 max-w-lg">
-                       Play notes freely. Gemini will listen and generate an {jamMood || "ambient"} backing track to match your style.
-                   </p>
-               </div>
-               <div className="absolute top-6 right-6 z-50">
-                 <button onClick={() => setAppState(AppState.MENU)} className="px-6 py-3 rounded-full bg-black/50 backdrop-blur border border-white/20 text-white hover:bg-white/10 transition-colors">Stop Jamming</button>
-              </div>
-           </div>
-       )}
-     </>
-  );
+  switch (appState) {
+    case AppState.ONBOARDING: 
+        return <OnboardingScreen 
+            onboardingStep={onboardingStep} handleOnboardingNext={handleOnboardingNext}
+            selectedInstrument={selectedInstrument} setSelectedInstrument={setSelectedInstrument}
+            micError={micError} currentInput={currentInput} midiConnected={midiConnected}
+            openAuthModal={openAuthModal} isAuthModalOpen={isAuthModalOpen} setAuthModalOpen={setAuthModalOpen}
+            authModalView={authModalView} setCurrentUser={setCurrentUser} setAppState={setAppState}
+        />;
+    
+    case AppState.MENU: 
+        return currentUser ? <MenuScreen 
+            currentUser={currentUser} setShowUserMenu={setShowUserMenu} showUserMenu={showUserMenu}
+            signOut={signOut} setAppState={setAppState} speakText={handleSpeak}
+            activeTab={activeTab} setActiveTab={setActiveTab} startSong={startSong}
+            startJam={startJam} handleGenerateWorkout={handleGenerateWorkout} isGenerating={isGenerating}
+            songSearchQuery={songSearchQuery} setSongSearchQuery={setSongSearchQuery} handleSongGeneration={handleSongGeneration}
+            composedSongs={composedSongs} parallax={parallax}
+            isDark={settings.darkMode} toggleTheme={toggleTheme}
+        /> : null;
+    
+    case AppState.PLAYING: 
+        return <GameScreen 
+            setAppState={setAppState} currentSong={currentSong} playbackSpeed={playbackSpeed}
+            setPlaybackSpeed={setPlaybackSpeed} score={score} selectedInstrument={selectedInstrument}
+            currentInput={currentInput} waitingNote={waitingNoteRef.current} isPlaying={isPlaying}
+            currentTimeInBeats={currentTimeInBeats} noteResults={noteResults}
+            loopRegion={loopRegion} setLoopRegion={setLoopRegion} settings={settings} isWaiting={isWaiting}
+        />;
+    
+    case AppState.FEEDBACK: 
+        return <FeedbackScreen 
+            score={score} misses={misses} currentSong={currentSong} 
+            aiFeedback={aiFeedback} startSong={startSong} setAppState={setAppState}
+        />;
+    
+    case AppState.JAM: 
+        return <JamScreen setAppState={setAppState} jamMood={jamMood} />;
+    
+    case AppState.SETTINGS: 
+        return <SettingsScreen setAppState={setAppState} settings={settings} setSettings={setSettings} currentInput={currentInput} />;
+    
+    default: 
+        return <LandingScreen 
+            isAuthModalOpen={isAuthModalOpen} setAuthModalOpen={setAuthModalOpen}
+            authModalView={authModalView} openAuthModal={openAuthModal}
+            setCurrentUser={setCurrentUser} setAppState={setAppState}
+        />;
+  }
 }

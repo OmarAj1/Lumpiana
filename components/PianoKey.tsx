@@ -5,43 +5,91 @@ import { NoteName } from '../types';
 interface PianoKeyProps {
   note: NoteName;
   isBlack: boolean;
-  isActive: boolean;
-  label?: string;
+  isTarget: boolean; // The note the game wants
+  isInput: boolean; // The note the user is pressing
+  label?: string; // Optional: Only show if settings allow
   style?: React.CSSProperties;
   className?: string;
 }
 
-const PianoKey: React.FC<PianoKeyProps> = ({ note, isBlack, isActive, label, style, className }) => {
-  // Realistic Piano Styling
-  const commonClasses = "relative flex items-end justify-center transition-all duration-100 ease-out select-none cursor-default";
+const PianoKey: React.FC<PianoKeyProps> = ({ note, isBlack, isTarget, isInput, label, style, className }) => {
   
-  // White Key: Ivory look with 3D depth at bottom
-  const whiteKeyClasses = `
-    z-0 
-    ${isActive 
-      ? 'bg-gradient-to-b from-blue-300 to-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)] border-b-4 border-blue-700 translate-y-1' 
-      : 'bg-gradient-to-b from-white to-gray-200 border-b-8 border-gray-300 shadow-[inset_0_-5px_5px_rgba(0,0,0,0.05)] hover:bg-gray-50'} 
-    border-x border-gray-300 rounded-b-[6px] text-gray-400
-  `;
+  // Base physics/layout
+  const commonClasses = "relative flex items-end justify-center transition-colors duration-75 ease-out select-none cursor-default overflow-visible";
+  
+  // Determine Feedback Color State
+  // Priority: Input (Red/Green) > Target (Blue waiting)
+  let bgClass = "";
+  let shadowClass = "";
+  let translateClass = "";
+  let borderClass = "";
 
-  // Black Key: Matte black with glossy top highlight
-  const blackKeyClasses = `
-    z-10 h-[65%] absolute top-0
-    ${isActive 
-      ? 'bg-gradient-to-b from-blue-600 to-blue-800 shadow-[0_0_20px_rgba(59,130,246,0.8)] border-b-2 border-blue-900' 
-      : 'bg-gradient-to-b from-gray-800 via-black to-black border-x border-b border-gray-900 shadow-[2px_5px_10px_rgba(0,0,0,0.4),inset_0_5px_5px_rgba(255,255,255,0.15)]'}
-    rounded-b-[4px]
+  if (isTarget && isInput) {
+      // HIT (Correct)
+      bgClass = isBlack 
+        ? "bg-green-500 from-green-400 to-green-600" 
+        : "bg-green-400 from-green-300 to-green-500";
+      shadowClass = "shadow-[0_0_30px_rgba(74,222,128,0.8)] z-50";
+      translateClass = "translate-y-1"; // Physical press
+  } else if (isInput) {
+      // WRONG (User error)
+      bgClass = isBlack 
+        ? "bg-red-600 from-red-500 to-red-700" 
+        : "bg-red-400 from-red-300 to-red-500";
+      shadowClass = "shadow-[0_0_30px_rgba(248,113,113,0.8)] z-50";
+      translateClass = "translate-y-1";
+  } else if (isTarget) {
+      // WAITING (Guide)
+      bgClass = isBlack 
+        ? "bg-blue-600 from-blue-500 to-blue-700" 
+        : "bg-blue-400 from-blue-300 to-blue-500";
+      shadowClass = "shadow-[0_0_25px_rgba(96,165,250,0.6)] animate-pulse z-40";
+      translateClass = "translate-y-0.5";
+  } else {
+      // IDLE (Realistic Piano Look)
+      if (isBlack) {
+          bgClass = "bg-gray-900 bg-[linear-gradient(145deg,#2a2a2a_0%,#000000_100%)]";
+          // Realistic glossy highlight on top
+          shadowClass = "shadow-[4px_8px_8px_rgba(0,0,0,0.5),inset_1px_1px_2px_rgba(255,255,255,0.2)]";
+      } else {
+          bgClass = "bg-white bg-[linear-gradient(to_bottom,#ffffff_0%,#f3f4f6_100%)]";
+          shadowClass = "shadow-[inset_0_-1px_3px_rgba(0,0,0,0.2)]";
+          borderClass = "border-l border-r border-b border-gray-300";
+      }
+  }
+
+  const whiteKeyLayout = `
+    z-0 h-full rounded-b-[6px] text-gray-400 
+    active:bg-gray-100 
+    ${bgClass} ${borderClass} ${shadowClass} ${translateClass}
+  `;
+  
+  // Black keys are typically ~60-65% height of white keys
+  const blackKeyLayout = `
+    z-20 h-[65%] absolute top-0 w-[60%] -translate-x-1/2 left-1/2 rounded-b-[4px] 
+    ${bgClass} ${shadowClass} ${translateClass}
   `;
 
   return (
     <div 
-      className={`${commonClasses} ${isBlack ? blackKeyClasses : whiteKeyClasses} ${className || ''}`}
+      className={`${commonClasses} ${isBlack ? blackKeyLayout : whiteKeyLayout} ${className || ''}`}
       style={style}
     >
-      {!isBlack && (
-        <span className={`mb-3 text-xs font-bold tracking-wider ${isActive ? 'text-white' : 'text-gray-400'}`}>
+      {/* Glossy Reflection for Black Keys */}
+      {isBlack && !isTarget && !isInput && (
+          <div className="absolute top-[2%] left-[10%] w-[80%] h-[90%] rounded-b-[3px] bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+      )}
+
+      {/* Note Label (Only visible on White keys for cleanliness if prop passed) */}
+      {!isBlack && label && (
+        <span className={`mb-3 text-[10px] font-bold tracking-widest uppercase ${isTarget || isInput ? 'text-white opacity-100' : 'text-gray-400 opacity-60'} transition-opacity`}>
           {label}
         </span>
+      )}
+      
+      {/* Highlight marker for guide on black keys */}
+      {isBlack && (isTarget || isInput) && (
+         <div className="absolute bottom-2 w-1.5 h-1.5 rounded-full bg-white/80" />
       )}
     </div>
   );

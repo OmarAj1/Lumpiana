@@ -43,6 +43,70 @@ export const DEMO_SONG: Song = {
   ]
 };
 
+export const COURSES: Song[] = [
+  {
+    id: 'course-1',
+    title: 'Piano Basics 101',
+    artist: 'Luma Academy',
+    difficulty: 'Beginner',
+    bpm: 60,
+    description: 'Learn the white keys and basic finger positioning.',
+    category: 'Course',
+    notes: [
+      { note: NoteName.C, octave: 4, duration: 1, startTime: 0 },
+      { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
+      { note: NoteName.E, octave: 4, duration: 1, startTime: 2 },
+      { note: NoteName.C, octave: 4, duration: 1, startTime: 3 },
+    ]
+  },
+  {
+    id: 'course-2',
+    title: 'First Melodies',
+    artist: 'Luma Academy',
+    difficulty: 'Beginner',
+    bpm: 70,
+    description: 'Play simple tunes like Mary Had a Little Lamb.',
+    category: 'Course',
+    notes: [
+      { note: NoteName.E, octave: 4, duration: 1, startTime: 0 },
+      { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
+      { note: NoteName.C, octave: 4, duration: 1, startTime: 2 },
+      { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
+      { note: NoteName.E, octave: 4, duration: 1, startTime: 4 },
+      { note: NoteName.E, octave: 4, duration: 1, startTime: 5 },
+      { note: NoteName.E, octave: 4, duration: 2, startTime: 6 },
+    ]
+  },
+  {
+    id: 'course-3',
+    title: 'Chords Introduction',
+    artist: 'Luma Academy',
+    difficulty: 'Intermediate',
+    bpm: 60,
+    description: 'Understanding major and minor triads.',
+    category: 'Course',
+    notes: [
+      { note: NoteName.C, octave: 4, duration: 4, startTime: 0 },
+      { note: NoteName.E, octave: 4, duration: 4, startTime: 0 },
+      { note: NoteName.G, octave: 4, duration: 4, startTime: 0 },
+    ]
+  },
+  {
+    id: 'course-4',
+    title: 'Rhythm Training',
+    artist: 'Luma Academy',
+    difficulty: 'Intermediate',
+    bpm: 90,
+    description: 'Master quarter, eighth, and sixteenth notes.',
+    category: 'Course',
+    notes: [
+      { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0 },
+      { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5 },
+      { note: NoteName.C, octave: 4, duration: 1, startTime: 1 },
+    ]
+  }
+];
+
 export const TRENDING_SONGS_METADATA = [
   { title: "Espresso", artist: "Sabrina Carpenter" },
   { title: "Birds of a Feather", artist: "Billie Eilish" },
