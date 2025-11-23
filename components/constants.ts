@@ -3,9 +3,9 @@
 import { NoteName, Song, NoteEvent } from './types';
 
 export const STAR_THRESHOLDS = {
-    GOLD: 0.9,   // 3 Stars
+    GOLD: 0.97,   // 3 Stars
     SILVER: 0.75, // 2 Stars
-    BRONZE: 0.5  // 1 Star
+    BRONZE: 0.0   // 1 Star (Any completion below 75%)
 };
 
 export const NOTE_FREQUENCIES: Record<string, number> = {

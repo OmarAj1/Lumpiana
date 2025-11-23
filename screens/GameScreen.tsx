@@ -3,76 +3,74 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { audioEngine } from '../services/audioEngine';
 import { AppState, NoteStatus, LoopRegion, NoteName, AudioAnalysisResult } from '../types';
-import { NOTES_ORDER } from '../constants';
+import { NOTES_ORDER, STAR_THRESHOLDS } from '../constants';
 import SheetMusic from '../components/SheetMusic';
-import Fretboard from '../components/Fretboard';
 import PianoKey from '../components/PianoKey';
-import { getFeedback, speakText } from '../services/geminiService';
+import { speakText } from '../services/geminiService';
 import { authService } from '../services/authService';
-import { STAR_THRESHOLDS } from '../constants';
 
-interface GameScreenProps {
-  // Remove props, use Context
-}
-
-const GameScreen: React.FC<GameScreenProps> = () => {
+const GameScreen: React.FC = () => {
   const { 
     currentSong, settings, setAppState, 
-    selectedInstrument, currentUser, setCurrentUser 
+    currentUser, setCurrentUser, setLastSessionStats
   } = useGame();
 
-  // Local Game State (things that change rarely or need re-render)
   const [isPlaying, setIsPlaying] = useState(true);
   const [playbackSpeed, setPlaybackSpeed] = useState(settings.defaultSpeed);
-  const [score, setScore] = useState(0);
+  
+  // NEW SCORING: Track count of correct notes instead of raw points
+  const [correctCount, setCorrectCount] = useState(0);
+  const [misses, setMisses] = useState(0); 
+  
   const [loopRegion, setLoopRegion] = useState<LoopRegion>({ 
       start: 0, end: 4, active: settings.enableLooping 
   });
   
-  // High-Freq Data (Refs)
   const [currentTimeInBeats, setCurrentTimeInBeats] = useState(0);
   const [isWaiting, setIsWaiting] = useState(false);
-  const [waitingNote, setWaitingNote] = useState<string | null>(null);
+  const [waitingNoteLabel, setWaitingNoteLabel] = useState<string | null>(null);
   
-  // Direct Audio Data (No State!)
-  const currentInputRef = useRef<AudioAnalysisResult>({ activeNotes: [], volume: 0, snr: 0, clarity: 0, source: 'none' });
+  const currentInputRef = useRef<AudioAnalysisResult>({ 
+      activeNotes: [], volume: 0, snr: 0, clarity: 0, harmonicity: 0, spectralCentroid: 0, source: 'none' 
+  });
   
   const noteResultsRef = useRef<Map<number, NoteStatus>>(new Map());
-  // We still need to force render when results change for visualizer
   const [, setTick] = useState(0); 
 
   const playedBackingChordsRef = useRef<Set<number>>(new Set());
-  const consecutiveHitFramesRef = useRef(0);
   const currentTimeRef = useRef(0);
   const lastFrameTimeRef = useRef(0);
   const animationFrameRef = useRef(0);
+  const waitingTimeRef = useRef(0); 
 
-  // Init
   useEffect(() => {
+      if (!currentSong.notes) {
+          setAppState(AppState.MENU);
+          return;
+      }
       noteResultsRef.current = new Map();
       currentTimeRef.current = 0;
-      setScore(0);
+      setCorrectCount(0);
+      setMisses(0);
       lastFrameTimeRef.current = performance.now();
   }, [currentSong]);
 
-  // Main Game Loop (Combined Audio + Logic)
   useEffect(() => {
       const loop = () => {
           const now = performance.now();
           const dt = (now - lastFrameTimeRef.current) / 1000;
           lastFrameTimeRef.current = now;
 
-          // 1. POLL AUDIO ENGINE DIRECTLY
           currentInputRef.current = audioEngine.analyze();
           
-          // 2. GAME LOGIC
-          if (isPlaying) {
+          if (isPlaying && currentSong?.notes && currentSong.notes.length > 0) {
               const effectiveBpm = currentSong.bpm * playbackSpeed;
-              let newTime = currentTimeRef.current + (dt * (effectiveBpm / 60));
+              const beatDelta = dt * (effectiveBpm / 60);
+              
+              let proposedTime = currentTimeRef.current + beatDelta;
 
-              // Loop
-              if (loopRegion.active && newTime >= loopRegion.end) {
-                  newTime = loopRegion.start;
+              if (loopRegion.active && proposedTime >= loopRegion.end) {
+                  proposedTime = loopRegion.start;
                   currentSong.notes.forEach((n, i) => {
                       if (n.startTime >= loopRegion.start && n.startTime < loopRegion.end) {
                           noteResultsRef.current.delete(i);
@@ -82,61 +80,98 @@ const GameScreen: React.FC<GameScreenProps> = () => {
                   setTick(t => t + 1);
               }
 
-              // Backing Track
               if (currentSong.backingTrack) {
                   currentSong.backingTrack.forEach((event, index) => {
-                      if (newTime >= event.startTime && !playedBackingChordsRef.current.has(index)) {
+                      if (proposedTime >= event.startTime && !playedBackingChordsRef.current.has(index)) {
                           audioEngine.playBackingTrackChord(event.notes, event.duration * (60/effectiveBpm));
                           playedBackingChordsRef.current.add(index);
                       }
                   });
               }
-
-              // Note Hit Logic
-              let lockTime = false;
-              let targetNoteLabel: string | null = null;
-
+              
+              let blockingNoteIndex = -1;
               for (let i = 0; i < currentSong.notes.length; i++) {
-                  const note = currentSong.notes[i];
-                  if (noteResultsRef.current.get(i) === NoteStatus.CORRECT) continue;
+                  const status = noteResultsRef.current.get(i);
+                  if (status !== NoteStatus.CORRECT && status !== NoteStatus.MISSED) {
+                      blockingNoteIndex = i;
+                      break;
+                  }
+              }
 
-                  if (newTime >= note.startTime) {
-                      // Check if ANY detected note matches target
-                      const hit = currentInputRef.current.activeNotes.some(detected => 
-                          detected.note === note.note && detected.octave === note.octave
-                      );
+              let shouldLockTime = false;
+              let displayLabel = "";
 
-                      if (hit) {
-                          consecutiveHitFramesRef.current++;
-                      } else {
-                          consecutiveHitFramesRef.current = 0;
+              if (blockingNoteIndex !== -1) {
+                  const targetNote = currentSong.notes[blockingNoteIndex];
+                  
+                  if (proposedTime >= targetNote.startTime) {
+                      const concurrentIndices = [blockingNoteIndex];
+                      for (let k = blockingNoteIndex + 1; k < currentSong.notes.length; k++) {
+                          if (Math.abs(currentSong.notes[k].startTime - targetNote.startTime) < 0.05) {
+                              concurrentIndices.push(k);
+                          } else {
+                              break; 
+                          }
                       }
 
-                      if (hit && consecutiveHitFramesRef.current >= 1) {
-                          noteResultsRef.current.set(i, NoteStatus.CORRECT);
-                          setScore(s => s + 100);
-                          if (note.lyrics && settings.enableTTS) speakText(note.lyrics);
-                          setTick(t => t + 1);
-                          lockTime = false;
+                      let allSatisfied = true;
+                      const noteLabels: string[] = [];
+
+                      concurrentIndices.forEach(idx => {
+                          const noteObj = currentSong.notes[idx];
+                          noteLabels.push(`${noteObj.note}${noteObj.octave}`);
+                          
+                          if (noteResultsRef.current.get(idx) === NoteStatus.CORRECT) return;
+
+                          const isHit = currentInputRef.current.activeNotes.some(
+                              detected => detected.note === noteObj.note && detected.octave === noteObj.octave
+                          );
+
+                          if (isHit) {
+                              noteResultsRef.current.set(idx, NoteStatus.CORRECT);
+                              // Increment count of correct notes
+                              setCorrectCount(c => c + 1);
+                              if (noteObj.lyrics && settings.enableTTS) speakText(noteObj.lyrics);
+                          } else {
+                              allSatisfied = false;
+                              noteResultsRef.current.set(idx, NoteStatus.HINTED);
+                          }
+                      });
+
+                      displayLabel = noteLabels.join(" + ");
+
+                      if (!allSatisfied) {
+                          if (settings.flowMode) {
+                              waitingTimeRef.current += dt;
+                              if (waitingTimeRef.current > 0.5) { 
+                                  concurrentIndices.forEach(idx => {
+                                      if (noteResultsRef.current.get(idx) !== NoteStatus.CORRECT) {
+                                          noteResultsRef.current.set(idx, NoteStatus.MISSED);
+                                          setMisses(m => m + 1);
+                                      }
+                                  });
+                                  waitingTimeRef.current = 0;
+                                  setTick(t => t + 1);
+                              }
+                          } else {
+                              proposedTime = targetNote.startTime; 
+                              shouldLockTime = true;
+                              waitingTimeRef.current += dt;
+                          }
                       } else {
-                          // Lock
-                          newTime = note.startTime;
-                          targetNoteLabel = `${note.note}${note.octave}`;
-                          noteResultsRef.current.set(i, NoteStatus.HINTED);
-                          lockTime = true;
-                          break; // Stop checking future notes
+                          waitingTimeRef.current = 0;
+                          setTick(t => t + 1);
                       }
                   }
               }
 
-              currentTimeRef.current = newTime;
-              setCurrentTimeInBeats(newTime);
-              setIsWaiting(lockTime);
-              setWaitingNote(targetNoteLabel);
-              
-              // End Condition
+              currentTimeRef.current = proposedTime;
+              setCurrentTimeInBeats(proposedTime);
+              setIsWaiting(shouldLockTime);
+              setWaitingNoteLabel(shouldLockTime ? displayLabel : null);
+
               const lastNote = currentSong.notes[currentSong.notes.length-1];
-              if (lastNote && newTime > lastNote.startTime + lastNote.duration + 1 && !loopRegion.active) {
+              if (lastNote && proposedTime > lastNote.startTime + lastNote.duration + 1 && !loopRegion.active) {
                   finishLesson();
                   return;
               }
@@ -147,122 +182,141 @@ const GameScreen: React.FC<GameScreenProps> = () => {
       
       animationFrameRef.current = requestAnimationFrame(loop);
       return () => cancelAnimationFrame(animationFrameRef.current);
-  }, [isPlaying, currentSong, playbackSpeed, loopRegion]);
+  }, [isPlaying, currentSong, playbackSpeed, loopRegion, settings.flowMode]);
 
   const finishLesson = async () => {
       setIsPlaying(false);
-      // Calc stats...
-      // Update User via Context...
+      
+      const totalNotes = currentSong.notes ? currentSong.notes.length : 1;
+      // Calculate Percentage Score (0 - 100)
+      const accuracyPercentage = Math.round((correctCount / totalNotes) * 100);
+      
+      setLastSessionStats({ score: accuracyPercentage, misses });
+      
+      if (currentUser) {
+          const accuracyRatio = correctCount / totalNotes;
+          let stars = 1; // Default to 1 star if completed (Assuming < 75%)
+          
+          if (accuracyRatio >= STAR_THRESHOLDS.GOLD) {
+              stars = 3; // >= 97%
+          } else if (accuracyRatio >= STAR_THRESHOLDS.SILVER) {
+              stars = 2; // >= 75%
+          }
+
+          // XP is calculated based on amount of correct notes played * multiplier
+          const xpGained = correctCount * 10;
+
+          const updatedUser = await authService.updateUserProgress(
+              currentUser.id, 
+              currentSong.id, 
+              { stars, highScore: accuracyPercentage }, // Store Percentage as High Score 
+              xpGained
+          );
+          setCurrentUser(updatedUser);
+      }
       setAppState(AppState.FEEDBACK);
   };
 
-  // Helper to extract primary note for visualizer (monophonic fallback for UI)
-  const primaryInput = currentInputRef.current.activeNotes[0] || { note: null, octave: null };
-  const inputForVis: AudioAnalysisResult = {
-      ...currentInputRef.current,
-      // @ts-ignore compatible struct
-      note: primaryInput.note,
-      octave: primaryInput.octave
-  };
+  const visInput = { ...currentInputRef.current };
+  
+  // Real-time % Calculation for HUD
+  const currentTotal = correctCount + misses;
+  const realtimeAccuracy = currentTotal > 0 ? Math.round((correctCount / currentTotal) * 100) : 100;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
-       {/* TOP BAR */}
-       <div className="h-16 flex items-center justify-between px-6 bg-gray-800 border-b border-gray-700 shrink-0 z-20">
-           <button onClick={() => setAppState(AppState.MENU)} className="text-gray-400 hover:text-white font-bold flex items-center gap-2">
-               ← Exit
-           </button>
-           <div className="text-center">
-               <h2 className="font-bold text-lg">{currentSong.title}</h2>
-               <p className="text-xs text-gray-400">{currentSong.artist} {currentSong.keySignature ? `(${currentSong.keySignature})` : ''}</p>
+    <div className="h-screen flex flex-col bg-black text-white overflow-hidden relative font-sans">
+       
+       {/* FLOATING HUD (Dynamic Island Style) */}
+       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6 px-6 py-3 bg-zinc-900/80 backdrop-blur-xl rounded-full border border-white/10 shadow-2xl">
+           <div className="flex flex-col items-center">
+               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Accuracy</span>
+               <span className={`text-xl font-mono font-bold ${realtimeAccuracy > 90 ? 'text-green-400' : realtimeAccuracy > 70 ? 'text-yellow-400' : 'text-white'}`}>
+                   {realtimeAccuracy}%
+               </span>
            </div>
-           <div className="flex items-center gap-4">
-               <div className="flex items-center gap-2 bg-black/30 px-3 py-1 rounded-full">
-                   <span className="text-xs font-mono text-gray-400">SPD</span>
-                   <input 
-                     type="range" min="0.5" max="1.5" step="0.1" 
-                     value={playbackSpeed} 
-                     onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                     className="w-20 accent-blue-500 h-1"
-                   />
+           <div className="w-px h-8 bg-white/10" />
+           <div className="text-center min-w-[120px]">
+               <h2 className="font-bold text-sm truncate max-w-[150px]">{currentSong.title}</h2>
+               <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-1">
+                   <span>{Math.round(currentSong.bpm * playbackSpeed)} BPM</span>
+                   {visInput.chordName && <span className="text-blue-400 font-bold">| {visInput.chordName}</span>}
                </div>
-               <div className="font-mono text-blue-400 text-xl">{score}</div>
            </div>
+           <div className="w-px h-8 bg-white/10" />
+           <button onClick={() => setAppState(AppState.MENU)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-colors">
+               ✕
+           </button>
        </div>
 
-       {/* MAIN AREA */}
+       {/* MAIN CONTENT */}
        <div className="flex-1 relative flex flex-col">
-           <div className="flex-1 relative bg-gray-900/50">
-                {/* We pass the REF current value to children who need to query it, 
-                    OR we force update via key if needed. 
-                    For smooth 60fps visualizer, SheetMusic should ALSO allow ref based input 
-                    but for now we pass the state that updates 60fps via the loop above 
-                    Wait, we aren't updating state 60fps above. 
-                    We need SheetMusic to pull data or we pass it.
-                    Actually, passing it as prop works if Parent re-renders. 
-                    BUT we want to avoid parent re-render.
-                    So SheetMusic should use useGame() or direct audio query?
-                    Ideally SheetMusic accepts a ref or we pass the raw object and forceUpdate child.
-                    For this refactor, I'll pass the derived object but use a separate Raf inside SheetMusic?
-                    No, let's pass the object, but we rely on the fact that 'setTick' or 'setCurrentTimeInBeats' 
-                    triggers the render.
-                    'setCurrentTimeInBeats' is happening 60fps. So GameScreen IS re-rendering 60fps.
-                    To optimize: Move 'SheetMusic' logic to use a ref and its own loop, 
-                    and GameScreen only updates 'score' etc.
-                */}
+           <div className="flex-1 relative bg-gradient-to-b from-zinc-900 to-black">
                <SheetMusic 
-                    songNotes={currentSong.notes} 
+                    songNotes={currentSong?.notes || []} 
                     currentTime={currentTimeInBeats} 
-                    currentInput={inputForVis} // This is now updating 60fps
+                    currentInput={visInput}
                     results={noteResultsRef.current}
-                    bpm={currentSong.bpm}
+                    bpm={currentSong?.bpm || 60}
                     isPlaying={isPlaying}
                     loopRegion={loopRegion}
                     settings={settings}
                />
-               
-               {isWaiting && waitingNote && (
-                   <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/10 text-yellow-400 px-4 py-1 rounded-full border border-yellow-500/50 text-sm font-bold animate-pulse backdrop-blur-md">
-                       Waiting for {waitingNote}
+               {isWaiting && waitingNoteLabel && (
+                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                       <div className="px-8 py-4 bg-blue-600 rounded-2xl shadow-glow animate-pulse text-2xl font-bold">
+                           Play {waitingNoteLabel}
+                       </div>
                    </div>
                )}
            </div>
            
-           <div className="h-12 bg-gray-800/80 border-t border-gray-700 flex items-center px-4 gap-4 shrink-0 backdrop-blur">
-               <span className="text-xs font-bold text-gray-400 uppercase">Loop</span>
-               <input type="checkbox" checked={loopRegion.active} onChange={e => setLoopRegion(p => ({ ...p, active: e.target.checked }))} className="w-4 h-4 accent-blue-500" />
-               <input type="range" min="0" max={currentSong.notes[currentSong.notes.length-1]?.startTime || 30} value={loopRegion.start} onChange={e => setLoopRegion(p => ({ ...p, start: parseFloat(e.target.value) }))} className="flex-1 accent-blue-500 h-1" />
-               <input type="range" min="0" max={currentSong.notes[currentSong.notes.length-1]?.startTime || 30} value={loopRegion.end} onChange={e => setLoopRegion(p => ({ ...p, end: parseFloat(e.target.value) }))} className="flex-1 accent-blue-500 h-1" />
+           {/* CONTROL STRIP */}
+           <div className="h-10 bg-zinc-900 border-t border-white/5 flex items-center px-4 gap-4 shrink-0 justify-center">
+               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Loop Region</span>
+               <input type="range" min="0" max={(currentSong?.notes?.[currentSong.notes.length-1]?.startTime) || 30} value={loopRegion.start} onChange={e => setLoopRegion(p => ({ ...p, start: parseFloat(e.target.value) }))} className="w-32 h-1 accent-blue-500 bg-white/10 rounded-full appearance-none" />
+               <input type="range" min="0" max={(currentSong?.notes?.[currentSong.notes.length-1]?.startTime) || 30} value={loopRegion.end} onChange={e => setLoopRegion(p => ({ ...p, end: parseFloat(e.target.value) }))} className="w-32 h-1 accent-blue-500 bg-white/10 rounded-full appearance-none" />
+               <div className={`w-2 h-2 rounded-full ${loopRegion.active ? 'bg-blue-500' : 'bg-gray-600'} cursor-pointer`} onClick={() => setLoopRegion(p => ({ ...p, active: !p.active }))} />
            </div>
 
-           <div className="h-[33vh] w-full bg-[#1a1a1a] relative shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] border-t-4 border-[#3a3a3a] flex items-end justify-center overflow-hidden">
-               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'url(https://www.transparenttextures.com/patterns/wood-pattern.png)' }} />
-               <div className="relative flex h-full w-full max-w-[1600px] mx-auto px-4 pb-1">
+           {/* PIANO */}
+           <div className="h-[35vh] w-full bg-[#121214] relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 flex items-end justify-center overflow-hidden">
+               <div className="relative flex h-full w-full max-w-[1400px] mx-auto">
                   {[3, 4, 5].map(octave => 
                       NOTES_ORDER.map((note) => {
                           const isBlack = note.includes('#');
                           const noteStr = `${note}${octave}`;
-                          const isActiveTarget = isWaiting && waitingNote === noteStr;
-                          // Polyphonic Check
-                          const isUserInput = currentInputRef.current.activeNotes.some(n => n.note === note && n.octave === octave);
+                          const isTarget = waitingNoteLabel?.includes(noteStr) || false;
+                          const isUserInput = visInput.activeNotes.some(n => n.note === note && n.octave === octave);
 
                           if (isBlack) return null;
+                          
+                          let blackKeyNote: NoteName | null = null;
+                          if (note === NoteName.C) blackKeyNote = NoteName.Cs;
+                          if (note === NoteName.D) blackKeyNote = NoteName.Ds;
+                          if (note === NoteName.F) blackKeyNote = NoteName.Fs;
+                          if (note === NoteName.G) blackKeyNote = NoteName.Gs;
+                          if (note === NoteName.A) blackKeyNote = NoteName.As;
+
+                          const blackNoteStr = blackKeyNote ? `${blackKeyNote}${octave}` : '';
+                          const isBlackTarget = blackKeyNote ? waitingNoteLabel?.includes(blackNoteStr) : false;
+                          const isBlackInput = blackKeyNote ? visInput.activeNotes.some(n => n.note === blackKeyNote && n.octave === octave) : false;
+
                           return (
                               <div key={noteStr} className="flex-1 relative h-full">
                                   <PianoKey 
                                       note={note} isBlack={false} 
-                                      isTarget={isActiveTarget && !isBlack}
-                                      isInput={isUserInput && !isBlack}
+                                      isTarget={isTarget}
+                                      isInput={isUserInput}
                                       label={settings.showNoteLabels ? note : undefined}
                                       className="w-full h-full"
                                   />
-                                  {['C','D','F','G','A'].includes(note) && (
+                                  {blackKeyNote && (
                                       <div className="absolute top-0 right-0 w-0 h-full z-20 overflow-visible">
                                           <PianoKey
-                                              note={note === NoteName.C ? NoteName.Cs : note === NoteName.D ? NoteName.Ds : note === NoteName.F ? NoteName.Fs : note === NoteName.G ? NoteName.Gs : NoteName.As}
+                                              note={blackKeyNote}
                                               isBlack={true}
-                                              isTarget={waitingNote?.startsWith(`${note}#`) || false} // Simplified
-                                              isInput={currentInputRef.current.activeNotes.some(n => n.note === `${note}#` && n.octave === octave)}
+                                              isTarget={isBlackTarget || false}
+                                              isInput={isBlackInput || false}
                                           />
                                       </div>
                                   )}

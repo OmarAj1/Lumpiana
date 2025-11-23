@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SparklesIcon, CableIcon, CheckIcon } from '../components/Icons';
 import AuthModal from '../components/AuthModal';
-import { OnboardingStep, Instrument, AudioAnalysisResult, User, AppState, AuthView } from '../types';
+import { OnboardingStep, Instrument, User, AppState, AuthView } from '../types';
+import { audioEngine } from '../services/audioEngine';
+import { useAudioPoll } from '../hooks/useAudioPoll';
 
 interface OnboardingScreenProps {
     onboardingStep: OnboardingStep;
@@ -10,7 +12,6 @@ interface OnboardingScreenProps {
     selectedInstrument: Instrument;
     setSelectedInstrument: (inst: Instrument) => void;
     micError: string;
-    currentInput: AudioAnalysisResult;
     midiConnected: boolean;
     openAuthModal: (view: AuthView) => void;
     isAuthModalOpen: boolean;
@@ -22,9 +23,37 @@ interface OnboardingScreenProps {
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     onboardingStep, handleOnboardingNext, selectedInstrument, setSelectedInstrument,
-    micError, currentInput, midiConnected, openAuthModal, isAuthModalOpen, setAuthModalOpen,
+    micError, midiConnected, openAuthModal, isAuthModalOpen, setAuthModalOpen,
     authModalView, setCurrentUser, setAppState
 }) => {
+    const zeroSignalTimeRef = useRef(0);
+    const [isRetrying, setIsRetrying] = useState(false);
+    
+    // Use the hook for live audio data
+    const currentInput = useAudioPoll();
+
+    // Auto-retry logic
+    useEffect(() => {
+        let interval: any;
+        if (onboardingStep === OnboardingStep.AUDIO_SETUP) {
+            interval = setInterval(() => {
+                if (currentInput.volume < 0.001 && !midiConnected) {
+                    zeroSignalTimeRef.current += 1000;
+                    if (zeroSignalTimeRef.current > 3000 && !isRetrying) {
+                        setIsRetrying(true);
+                        audioEngine.restart().then(() => {
+                             setTimeout(() => setIsRetrying(false), 1000);
+                             zeroSignalTimeRef.current = 0;
+                        });
+                    }
+                } else {
+                    zeroSignalTimeRef.current = 0;
+                }
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [onboardingStep, currentInput.volume, midiConnected, isRetrying]);
+
   return (
       <div className="flex flex-col items-center justify-center h-screen bg-surface-primary text-center p-8">
           <div className="w-full max-w-md">
@@ -85,9 +114,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                               {micError}
                           </div>
                       )}
+                      
+                      {isRetrying && (
+                          <div className="text-yellow-400 text-sm animate-pulse">
+                              Trying to access microphone again...
+                          </div>
+                      )}
 
                       <div className="h-32 bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center relative overflow-hidden">
-                          <div className="absolute bottom-0 left-0 right-0 bg-blue-500 transition-all duration-75 ease-out" style={{ height: `${Math.min(100, currentInput.volume * 2000)}%`, opacity: 0.5 }} />
+                          <div 
+                            className={`absolute bottom-0 left-0 right-0 transition-all duration-75 ease-out ${currentInput.volume < 0.001 ? 'bg-red-500' : 'bg-blue-500'}`}
+                            style={{ height: `${Math.min(100, currentInput.volume * 2000)}%`, opacity: 0.5 }} 
+                          />
                           <div className="z-10 text-2xl font-mono font-bold text-white">
                               {currentInput.activeNotes[0] ? `${currentInput.activeNotes[0].note}${currentInput.activeNotes[0].octave}` : '...'}
                           </div>

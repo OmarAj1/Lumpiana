@@ -1,5 +1,7 @@
 
-import { GoogleGenAI, Type, Modality, SafetySetting, HarmCategory, HarmBlockThreshold } from "@google/genai";
+// services/geminiService.ts
+
+import { GoogleGenAI, Type, Modality, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 // Safe access to process.env for browser environments
 const API_KEY = (typeof process !== 'undefined' && process.env && process.env.API_KEY) || ''; 
@@ -14,14 +16,41 @@ const getAi = (): GoogleGenAI => {
   return aiInstance;
 };
 
-// Helper to strip Markdown code blocks if Gemini adds them
-const cleanJson = (text: string): string => {
+// Helper to strip Markdown code blocks and fix infinite decimals
+const sanitizeAndRepairJson = (text: string): string => {
   let clean = text.trim();
-  // Remove ```json ... ``` or ``` ... ``` wrappers
-  if (clean.startsWith('```')) {
-    clean = clean.replace(/^```(json)?/i, '').replace(/```$/, '');
+  
+  // 1. Strip Markdown wrappers
+  clean = clean.replace(/^```(json)?/i, '').replace(/```$/, '');
+  
+  // 2. Find JSON bounds
+  const firstBrace = clean.indexOf('{');
+  if (firstBrace !== -1) {
+      clean = clean.substring(firstBrace);
   }
-  return clean.trim();
+
+  // 3. AGGRESSIVE FIX: Truncate infinite decimals in the string BEFORE parsing
+  clean = clean.replace(/(\d+\.\d{3,})/g, (match) => {
+      return parseFloat(match).toFixed(2);
+  });
+
+  // 4. Handle Truncation (Attempt to close JSON)
+  if (!clean.trim().endsWith('}')) {
+      const lastBracket = clean.lastIndexOf(']');
+      const lastBrace = clean.lastIndexOf('}');
+      
+      if (lastBracket === -1 || lastBracket < clean.lastIndexOf('[')) {
+          const lastObjectClose = clean.lastIndexOf('}');
+          if (lastObjectClose !== -1) {
+              clean = clean.substring(0, lastObjectClose + 1);
+              clean += ']}';
+          }
+      } else if (lastBrace === -1) {
+          clean += '}';
+      }
+  }
+  
+  return clean;
 };
 
 export const stopSpeech = () => {
@@ -35,12 +64,14 @@ export const generateLesson = async (level: string, genre: string) => {
     const ai = getAi();
     const model = 'gemini-2.5-flash';
     
+    // OPTIMIZATION: Reduced to 4 bars for speed
     const prompt = `
-      Create a piano lesson for a ${level} student interested in ${genre}. 
-      Return a JSON object representing a short melody or exercise (4-8 bars).
-      The 'notes' array should contain objects with 'note' (e.g. 'C', 'F#'), 'octave' (3, 4, or 5), 'duration' (in beats), and 'startTime' (cumulative beats).
-      Keep the melody simple enough for a beginner but musical.
-      For 'Beginner' level, ensure the BPM is slow (between 40 and 60 bpm) and rhythms are very simple.
+      Create a very short ${level} piano lesson in ${genre} style.
+      Constraint: Exactly 4 bars. Max 20 notes.
+      Requirements:
+      1. Provide 'finger' (1-5) for every note.
+      2. Round 'startTime'/'duration' to 2 decimals.
+      3. Return valid JSON.
     `;
 
     const response = await ai.models.generateContent({
@@ -64,17 +95,24 @@ export const generateLesson = async (level: string, genre: string) => {
                   octave: { type: Type.NUMBER },
                   duration: { type: Type.NUMBER },
                   startTime: { type: Type.NUMBER },
-                  lyrics: { type: Type.STRING, nullable: true }
+                  lyrics: { type: Type.STRING, nullable: true },
+                  hand: { type: Type.STRING, enum: ['l', 'r'], nullable: true },
+                  finger: { type: Type.NUMBER, description: "1 to 5" }
                 }
               }
             }
-          }
+          },
+          required: ["title", "bpm", "notes"]
         }
       }
     });
 
     if (response.text) {
-      return JSON.parse(cleanJson(response.text));
+      const data = JSON.parse(sanitizeAndRepairJson(response.text));
+      if (!data.notes || !Array.isArray(data.notes)) {
+        throw new Error("Invalid format: missing notes array");
+      }
+      return data;
     }
     throw new Error("No text in response");
 
@@ -88,36 +126,25 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
     try {
       const ai = getAi();
       
-      // Enhanced prompt for Full Song + Lyrics using Thinking Mode
+      // EXTREME OPTIMIZATION: Snippet only. Max 10-15s. Max 30 notes.
       const prompt = `
-        Role: You are an expert musicologist and professional transcriber.
+        Task: Transcribe the MAIN HOOK/CHORUS ONLY of "${songTitle}"${artist ? ` by ${artist}` : ''}.
         
-        Task: Create a comprehensive, high-fidelity piano arrangement (melody + backing chords) for the song "${songTitle}"${artist ? ` specifically by the artist "${artist}"` : ''}.
-
-        CRITICAL INSTRUCTIONS:
-        1.  **ARTIST ACCURACY**: You MUST use the provided artist name "${artist || 'the original artist'}" to identify the correct recording, tempo, key, and style. Do not generate a generic version.
-        2.  **SUBSTANTIAL LENGTH**: 
-            - The arrangement MUST be a full-length song (approx 2-3 minutes).
-            - It MUST contain a MINIMUM of 150 notes. Target 250-350 notes.
-            - Do NOT return a short snippet.
-        3.  **STRUCTURE**: 
-            - Explicitly structure the arrangement: Intro -> Verse 1 -> Chorus -> Verse 2 -> Chorus -> Bridge -> Outro.
-            - Ensure smooth transitions between sections.
-        4.  **CONTENT**:
-            - **Melody**: Precise transcription of the vocal melody or main theme.
-            - **Lyrics**: You MUST map the correct lyrics to every corresponding note event in the melody.
-            - **Harmony**: Provide a 'backingTrack' of chords that accurately follows the song's harmonic progression.
-            - **Hands**: Assign 'r' for melody/vocals and 'l' for bass/accompaniment lines where appropriate in the notes array if polyphonic.
-        5.  **FORMAT**:
-            - Return a single, valid JSON object matching the schema.
+        CRITICAL SPEED CONSTRAINTS:
+        1. **MAXIMUM 15 SECONDS** duration.
+        2. **MAXIMUM 30 NOTES** total.
+        3. Do not generate the whole song. Just the most recognizable bit.
+        
+        Formatting:
+        - Hand: 'r' (melody), 'l' (bass).
+        - Fingering: 1-5 required.
+        - Round all numbers to 2 decimals.
       `;
   
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-          thinkingConfig: { thinkingBudget: 32768 }, // Enable thinking mode for complex song generation
-          // Safety settings to prevent blocking on song titles
           safetySettings: [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
             { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -141,12 +168,15 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
                     duration: { type: Type.NUMBER },
                     startTime: { type: Type.NUMBER },
                     lyrics: { type: Type.STRING, nullable: true },
-                    hand: { type: Type.STRING, enum: ['l', 'r'], nullable: true }
+                    hand: { type: Type.STRING, enum: ['l', 'r'], nullable: true },
+                    finger: { type: Type.NUMBER }
                   }
                 }
               },
               backingTrack: {
                 type: Type.ARRAY,
+                nullable: true,
+                description: "Optional simple chord progression",
                 items: {
                     type: Type.OBJECT,
                     properties: {
@@ -157,16 +187,26 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
                     }
                 }
               }
-            }
+            },
+            required: ["title", "bpm", "notes"]
           }
         }
       });
   
       if (response.text) {
         try {
-            return JSON.parse(cleanJson(response.text));
+            const cleanText = sanitizeAndRepairJson(response.text);
+            if (!cleanText || cleanText === 'null') throw new Error("Empty response text");
+            
+            const data = JSON.parse(cleanText);
+            
+            if (!data.notes || !Array.isArray(data.notes) || data.notes.length === 0) {
+                 console.error("Generated song has no notes", data);
+                 return null;
+            }
+            return data;
         } catch (parseError) {
-            console.error("JSON Parse Error. Raw text:", response.text, parseError);
+            console.error("JSON Parse Error. Raw text sample:", response.text.substring(0, 200), parseError);
             return null;
         }
       }
@@ -180,11 +220,13 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
 export const generateWorkout = async (weakness?: string) => {
   try {
     const ai = getAi();
-    const focus = weakness || "finger independence and basic scales";
+    const focus = weakness || "finger independence";
+    
+    // OPTIMIZATION: Reduced to 15 notes max
     const prompt = `
-      Create a "5-Minute Workout" piano exercise focusing on ${focus}.
-      It should be a repetitive technical drill.
-      Limit to 16 bars.
+      Create a micro-workout (max 15 notes) for piano focusing on ${focus}.
+      Round all values to 2 decimals.
+      Include finger numbers.
       Return JSON.
     `;
 
@@ -207,16 +249,23 @@ export const generateWorkout = async (weakness?: string) => {
                   octave: { type: Type.NUMBER },
                   duration: { type: Type.NUMBER },
                   startTime: { type: Type.NUMBER },
+                  finger: { type: Type.NUMBER },
+                  hand: { type: Type.STRING }
                 }
               }
             }
-          }
+          },
+          required: ["title", "bpm", "notes"]
         }
       }
     });
 
     if (response.text) {
-      return JSON.parse(cleanJson(response.text));
+      const data = JSON.parse(sanitizeAndRepairJson(response.text));
+      if (!data.notes || !Array.isArray(data.notes)) {
+          return null;
+      }
+      return data;
     }
     return null;
   } catch (error) {
@@ -230,7 +279,7 @@ export const getFeedback = async (score: number, misses: number) => {
      const ai = getAi();
      const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `A piano student just finished a lesson. Score: ${score} points. Missed notes: ${misses}. If misses > 0, be constructive. If score is high, be praising. Give a short, 1-sentence tip.`,
+      contents: `A piano student just finished a lesson. Score: ${score}. Misses: ${misses}. Give a short 1-sentence tip.`,
     });
     return response.text;
   } catch (e) {
@@ -242,12 +291,9 @@ export const generateAccompaniment = async (recentNotes: string[]) => {
   try {
     if (recentNotes.length === 0) return null;
     const ai = getAi();
-    const notesStr = recentNotes.join(', ');
-    
     const prompt = `
-      The user is jamming on a piano and played these notes recently: [${notesStr}]. 
-      Generate a 4-bar ambient background chord progression.
-      Return JSON with 'chords' array.
+      Generate 2 ambient chords for notes: ${recentNotes.slice(0,5).join(', ')}.
+      Return JSON.
     `;
 
     const response = await ai.models.generateContent({
@@ -264,25 +310,22 @@ export const generateAccompaniment = async (recentNotes: string[]) => {
               items: {
                 type: Type.OBJECT,
                 properties: {
-                  notes: { 
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
-                  },
+                  notes: { type: Type.ARRAY, items: { type: Type.STRING } },
                   duration: { type: Type.NUMBER }
                 }
               }
             }
-          }
+          },
+          required: ["mood", "chords"]
         }
       }
     });
     
     if (response.text) {
-      return JSON.parse(cleanJson(response.text));
+      return JSON.parse(sanitizeAndRepairJson(response.text));
     }
     return null;
   } catch (error) {
-    console.error("Accompaniment generation failed", error);
     return null;
   }
 };
@@ -293,16 +336,10 @@ export const speakText = async (text: string): Promise<void> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: {
-        parts: [{ text: text }],
-      },
+      contents: { parts: [{ text: text }] },
       config: {
         responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: "Kore" }, 
-          },
-        },
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
       },
     });
 
@@ -310,16 +347,11 @@ export const speakText = async (text: string): Promise<void> => {
     if (base64Audio) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContextClass();
-      
       const audioBuffer = await decodeAudioData(base64Audio, audioCtx);
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioCtx.destination);
-      
-      if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
-      }
-      
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
       source.start();
     }
   } catch (error) {
@@ -337,23 +369,16 @@ function atobUint8(base64: string): Uint8Array {
   return bytes;
 }
 
-async function decodeAudioData(
-  base64: string,
-  ctx: AudioContext
-): Promise<AudioBuffer> {
+async function decodeAudioData(base64: string, ctx: AudioContext): Promise<AudioBuffer> {
   const bytes = atobUint8(base64);
   const bufferClone = new Uint8Array(bytes.length);
   bufferClone.set(bytes);
-  
   try {
     return await ctx.decodeAudioData(bufferClone.buffer);
   } catch (e) {
-    // Fallback manual decoding for raw PCM if needed or headerless data
     const dataInt16 = new Int16Array(bytes.buffer);
     const channelData = new Float32Array(dataInt16.length);
-    for (let i = 0; i < dataInt16.length; i++) {
-      channelData[i] = dataInt16[i] / 32768.0;
-    }
+    for (let i = 0; i < dataInt16.length; i++) channelData[i] = dataInt16[i] / 32768.0;
     const buffer = ctx.createBuffer(1, channelData.length, 24000);
     buffer.copyToChannel(channelData, 0);
     return buffer;

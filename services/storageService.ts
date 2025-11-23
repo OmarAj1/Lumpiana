@@ -1,35 +1,18 @@
 
-import { AppSettings, Song } from '../types';
+import { AppSettings, Song, User } from '../types';
+import { DEFAULT_APP_SETTINGS } from '../config/defaults';
 
-const SETTINGS_KEY = 'luma_app_settings_v5'; // Bumped version for new defaults
+const SETTINGS_KEY = 'luma_app_settings_v6';
 const COMPOSED_SONGS_KEY = 'luma_composed_library';
-
-const DEFAULT_SETTINGS: AppSettings = {
-  defaultSpeed: 1.0,
-  enableLooping: false,
-  showNoteLabels: true,
-  strictMode: false,
-  micSensitivity: 1.2,
-  masterVolume: 0.5,
-  enableTTS: true, // Lyrics singing remains enabled
-  enableVoiceFeedback: false, // AI speaking DISABLED by default
-  enableParticleEffects: true,
-  showDebugInfo: false,
-  autoSaveSongs: true,
-  inputSource: 'auto',
-  themeColor: 'blue',
-  darkMode: true, // Dark mode enabled by default
-  noteDisplayStyle: 'Standard',
-  accidentalStyle: 'Sharp'
-};
+const USERS_KEY = 'luma_users';
 
 export const storageService = {
   getSettings(): AppSettings {
     try {
       const data = localStorage.getItem(SETTINGS_KEY);
-      return data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS;
+      return data ? { ...DEFAULT_APP_SETTINGS, ...JSON.parse(data) } : DEFAULT_APP_SETTINGS;
     } catch {
-      return DEFAULT_SETTINGS;
+      return DEFAULT_APP_SETTINGS;
     }
   },
 
@@ -48,9 +31,8 @@ export const storageService = {
 
   saveComposedSong(song: Song) {
     const current = this.getComposedSongs();
-    // Prevent duplicates by ID
     if (!current.find(s => s.id === song.id)) {
-      current.unshift(song); // Add to top
+      current.unshift(song);
       localStorage.setItem(COMPOSED_SONGS_KEY, JSON.stringify(current));
     }
   },
@@ -63,7 +45,30 @@ export const storageService = {
   },
   
   resetSettings() {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
-      return DEFAULT_SETTINGS;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_APP_SETTINGS));
+      return DEFAULT_APP_SETTINGS;
+  },
+
+  exportUserData(): string {
+      const data = {
+          users: localStorage.getItem(USERS_KEY),
+          settings: localStorage.getItem(SETTINGS_KEY),
+          songs: localStorage.getItem(COMPOSED_SONGS_KEY),
+          timestamp: new Date().toISOString()
+      };
+      return JSON.stringify(data, null, 2);
+  },
+
+  importUserData(jsonString: string): boolean {
+      try {
+          const data = JSON.parse(jsonString);
+          if (data.users) localStorage.setItem(USERS_KEY, data.users);
+          if (data.settings) localStorage.setItem(SETTINGS_KEY, data.settings);
+          if (data.songs) localStorage.setItem(COMPOSED_SONGS_KEY, data.songs);
+          return true;
+      } catch (e) {
+          console.error("Import failed", e);
+          return false;
+      }
   }
 };

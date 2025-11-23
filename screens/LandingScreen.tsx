@@ -1,8 +1,10 @@
 
+
 import React from 'react';
-import { SparklesIcon } from '../components/Icons';
+import { SparklesIcon, PlayIcon, CheckIcon } from '../components/Icons';
 import AuthModal from '../components/AuthModal';
 import { AppState, AuthView, User } from '../types';
+import { motion } from 'framer-motion';
 
 interface LandingScreenProps {
   isAuthModalOpen: boolean;
@@ -17,33 +19,131 @@ const LandingScreen: React.FC<LandingScreenProps> = ({
   isAuthModalOpen, setAuthModalOpen, authModalView, openAuthModal, setCurrentUser, setAppState
 }) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-surface-primary dark:bg-dark-surface-primary text-white relative overflow-hidden transition-colors duration-300">
-        <div className="absolute inset-0 pointer-events-none">
-             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 blur-[120px] rounded-full" />
-             <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-violet-600/20 blur-[120px] rounded-full" />
+    <div className="min-h-screen bg-black text-white relative overflow-hidden font-sans selection:bg-blue-500/30">
+        
+        {/* Animated Background Mesh */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+             <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-blue-600/20 blur-[150px] rounded-full animate-float" />
+             <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-purple-600/20 blur-[150px] rounded-full animate-pulse-slow" />
+             <div className="absolute top-[40%] left-[30%] w-[40vw] h-[40vw] bg-cyan-500/10 blur-[120px] rounded-full" />
         </div>
-        <div className="z-10 text-center space-y-8 max-w-md p-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-violet-600 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-500/30 mb-6">
-                <SparklesIcon />
+
+        {/* Navbar */}
+        <div className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                    <div className="w-4 h-4 bg-blue-600 rounded-full" />
+                </div>
+                <span className="font-bold text-xl tracking-tight">Luma</span>
             </div>
-            <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">Luma</h1>
-            <p className="text-gray-400 text-lg">Sign in to unlock your personal AI music tutor.</p>
-            
-            <div className="space-y-4 w-full">
+            <div className="flex items-center gap-4">
                 <button 
                     onClick={() => openAuthModal('signIn')}
-                    className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-105 transition-transform"
+                    className="text-gray-300 hover:text-white font-medium transition-colors text-sm"
                 >
                     Sign In
                 </button>
                 <button 
                     onClick={() => openAuthModal('signUp')}
-                    className="w-full py-4 bg-white/5 text-white border border-white/10 rounded-xl font-bold text-lg hover:bg-white/10 transition-colors"
+                    className="px-5 py-2.5 bg-white text-black rounded-full font-bold text-sm hover:bg-gray-100 transition-all active:scale-95"
                 >
-                    Create Account
+                    Get Started
                 </button>
             </div>
         </div>
+
+        {/* Main Hero Grid */}
+        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-10 pb-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                
+                {/* Left: Text Content */}
+                <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="space-y-8"
+                >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                        <SparklesIcon />
+                        <span className="text-sm font-medium text-blue-300">New: Gemini 2.0 Integration</span>
+                    </div>
+
+                    <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.1]">
+                        Master Piano <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                            The Smart Way.
+                        </span>
+                    </h1>
+                    
+                    <p className="text-lg text-gray-400 max-w-lg leading-relaxed">
+                        Luma listens to you play in real-time, providing instant feedback and adaptive lessons generated by AI. No MIDI cable required.
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                        <button 
+                            onClick={() => openAuthModal('signUp')}
+                            className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-500 transition-all shadow-[0_0_40px_rgba(37,99,235,0.4)] active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            Start Learning Free <div className="bg-white/20 p-1 rounded-full"><PlayIcon /></div>
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-6 text-sm text-gray-500 pt-6">
+                        <div className="flex items-center gap-2"><CheckIcon /> <span>Real-time Pitch Detection</span></div>
+                        <div className="flex items-center gap-2"><CheckIcon /> <span>Instant Feedback</span></div>
+                    </div>
+                </motion.div>
+
+                {/* Right: Visual Bentr Grid */}
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="relative"
+                >
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                        {/* Card 1: Progress */}
+                        <div className="col-span-2 p-6 bg-zinc-900 rounded-2xl border border-white/5 flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-400 text-xs uppercase font-bold mb-1">Current Streak</p>
+                                <p className="text-3xl font-bold text-white">12 Days 🔥</p>
+                            </div>
+                            <div className="h-10 w-10 bg-orange-500 rounded-full blur-xl opacity-20 absolute" />
+                        </div>
+
+                        {/* Card 2: Sheet Music Preview */}
+                        <div className="col-span-2 h-48 bg-zinc-900 rounded-2xl border border-white/5 overflow-hidden relative group">
+                            <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <div className="w-1 h-8 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0s'}} />
+                                <div className="w-1 h-12 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
+                                <div className="w-1 h-6 bg-cyan-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
+                                <div className="w-1 h-10 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.3s'}} />
+                            </div>
+                            <div className="absolute bottom-4 left-4">
+                                <p className="font-bold text-white">AI Visualization</p>
+                                <p className="text-xs text-gray-500">See what you play</p>
+                            </div>
+                        </div>
+
+                        {/* Card 3: Instrument */}
+                        <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl text-white flex flex-col justify-between h-40">
+                            <span className="text-4xl">🎹</span>
+                            <p className="font-bold">Piano Support</p>
+                        </div>
+
+                        {/* Card 4: AI */}
+                        <div className="p-6 bg-white text-black rounded-2xl flex flex-col justify-between h-40">
+                            <span className="text-4xl">✨</span>
+                            <div>
+                                <p className="font-bold">Gemini AI</p>
+                                <p className="text-xs text-gray-600">Personal Tutor</p>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </main>
+
         <AuthModal 
             isOpen={isAuthModalOpen} 
             onClose={() => setAuthModalOpen(false)} 
@@ -59,4 +159,3 @@ const LandingScreen: React.FC<LandingScreenProps> = ({
 };
 
 export default LandingScreen;
-    

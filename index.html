@@ -3,60 +3,58 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Luma Keyboards</title>
+    <title>Luma - Master Piano</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
+              sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+              mono: ['JetBrains Mono', 'SFMono-Regular', 'Menlo', 'monospace'],
             },
             colors: {
               surface: {
-                primary: '#0f172a',
-                secondary: '#1e293b',
-                interactive: 'rgba(255, 255, 255, 0.05)'
+                primary: '#09090b', // Zinc 950 (Deep Black)
+                secondary: '#18181b', // Zinc 900
+                tertiary: '#27272a', // Zinc 800
+                glass: 'rgba(24, 24, 27, 0.6)',
               },
               brand: {
-                start: '#3b82f6',
-                end: '#8b5cf6'
+                primary: '#3b82f6', // Apple Blue-ish
+                secondary: '#8b5cf6', // Violet
               },
               dark: {
                 surface: {
                   primary: '#ffffff',
-                  secondary: '#f3f4f6',
-                  interactive: 'rgba(0, 0, 0, 0.05)'
+                  secondary: '#f4f4f5', // Zinc 100
+                  interactive: '#e4e4e7', // Zinc 200
                 },
                 text: {
-                  primary: '#111827',
-                  secondary: '#4b5563'
-                },
-                brand: {
-                  start: '#2563eb',
-                  end: '#7c3aed'
-                },
-                border: {
-                  primary: '#e5e7eb'
+                  primary: '#09090b',
+                  secondary: '#71717a' // Zinc 500
                 }
               },
-              border: {
-                primary: 'rgba(255, 255, 255, 0.1)'
-              },
-              text: {
-                primary: '#f8fafc',
-                secondary: '#94a3b8'
+              accent: {
+                blue: '#007AFF', // Apple Blue
+                success: '#34C759', // Apple Green
+                warning: '#FF9500', // Apple Orange
+                error: '#FF3B30', // Apple Red
               }
             },
+            boxShadow: {
+              'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+              'glow': '0 0 20px rgba(59, 130, 246, 0.5)',
+            },
             animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'scale-in': 'scaleIn 0.2s ease-out',
-              'fade-in': 'fadeIn 0.5s ease-out',
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'scale-in': 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              'fade-in': 'fadeIn 0.6s ease-out',
+              'float': 'float 6s ease-in-out infinite',
             },
             keyframes: {
               scaleIn: {
@@ -64,8 +62,12 @@
                 '100%': { transform: 'scale(1)', opacity: '1' },
               },
               fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
               }
             }
           },
@@ -74,28 +76,29 @@
     </script>
     <style>
       body {
-        background-color: #0f172a;
-        color: white;
-        overflow: hidden; /* App handles scrolling internally */
+        background-color: #000000;
+        color: #e4e4e7;
+        overflow: hidden;
       }
-      /* Custom Scrollbar */
+      /* Hide Scrollbar for clean look */
       ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
+        width: 0px;
         background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: rgba(100, 116, 139, 0.5);
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(100, 116, 139, 0.7);
       }
       /* Dark mode overrides */
       .dark body {
         background-color: #ffffff;
-        color: #111827;
+        color: #09090b;
+      }
+      .glass-panel {
+        background: rgba(24, 24, 27, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .dark .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(0, 0, 0, 0.05);
       }
     </style>
   <script type="importmap">

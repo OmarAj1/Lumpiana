@@ -1,4 +1,5 @@
 
+
 export enum NoteName {
   C = 'C',
   Cs = 'C#',
@@ -41,6 +42,7 @@ export interface NoteEvent {
   startTime: number; // absolute time in sequence
   lyrics?: string; // Lyrics syllable
   hand?: 'l' | 'r';
+  finger?: number; // 1 (Thumb) to 5 (Pinky)
 }
 
 export interface BackingTrackEvent {
@@ -70,14 +72,20 @@ export interface DetectedNote {
     octave: number;
     cents: number;
     frequency: number;
+    confidence: number;
+    midi: number;
 }
 
 export interface AudioAnalysisResult {
   activeNotes: DetectedNote[]; // Polyphonic support
   volume: number; // RMS
   snr: number; // Signal-to-Noise Ratio in dB
-  clarity: number;
+  clarity: number; // 0.0 - 1.0 (Confidence)
+  harmonicity: number; // 0.0 - 1.0 (Tonal strength vs Noise)
+  spectralCentroid: number; // Brightness/Timbre
   source: 'mic' | 'midi' | 'none'; 
+  chordName?: string; // e.g. "C Major"
+  spectrum?: number[]; // 0.0 - 1.0 normalized frequency bins for visualization
 }
 
 export interface SongStats {
@@ -124,6 +132,10 @@ export interface AppSettings {
   darkMode: boolean;          // Light/Dark mode
   noteDisplayStyle: NoteDisplayStyle;
   accidentalStyle: AccidentalStyle;
+  
+  // New Settings
+  flowMode: boolean;          // If true, game doesn't stop on miss, just marks red
+  sheetMusicZoom: number;     // 50 to 200%
 }
 
 export enum OnboardingStep {

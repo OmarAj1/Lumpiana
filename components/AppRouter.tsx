@@ -23,11 +23,10 @@ const AppRouter: React.FC<AppRouterProps> = ({ logic }) => {
         appState, setAppState, currentUser, setCurrentUser, 
         settings, setSettings, onboardingStep,
         selectedInstrument, setSelectedInstrument, composedSongs,
-        currentSong, 
+        currentSong, lastSessionStats,
         isAuthModalOpen, setAuthModalOpen, authModalView, signOut, toggleTheme
     } = ctx;
 
-    // Force Landing if no user and trying to access protected area
     if (!currentUser && appState === AppState.MENU) {
         return (
             <LandingScreen 
@@ -50,7 +49,6 @@ const AppRouter: React.FC<AppRouterProps> = ({ logic }) => {
                     selectedInstrument={selectedInstrument}
                     setSelectedInstrument={setSelectedInstrument}
                     micError="" 
-                    currentInput={{ activeNotes: [], volume: 0, snr: 0, clarity: 0, source: 'none' }}
                     midiConnected={false}
                     openAuthModal={logic.openAuthModal}
                     isAuthModalOpen={isAuthModalOpen}
@@ -83,6 +81,7 @@ const AppRouter: React.FC<AppRouterProps> = ({ logic }) => {
                     parallax={logic.parallax}
                     isDark={settings.darkMode}
                     toggleTheme={toggleTheme}
+                    handleGenerateLesson={logic.handleGenerateLesson}
                 />
             );
 
@@ -92,10 +91,10 @@ const AppRouter: React.FC<AppRouterProps> = ({ logic }) => {
         case AppState.FEEDBACK: 
             return (
                 <FeedbackScreen 
-                    score={0} 
-                    misses={0}
+                    score={lastSessionStats.score} 
+                    misses={lastSessionStats.misses}
                     currentSong={currentSong}
-                    aiFeedback="Good effort!"
+                    aiFeedback={lastSessionStats.misses === 0 ? "Perfect run!" : "Good effort, try again!"}
                     startSong={logic.startSong}
                     setAppState={setAppState}
                 />
@@ -115,7 +114,7 @@ const AppRouter: React.FC<AppRouterProps> = ({ logic }) => {
                     setAppState={setAppState}
                     settings={settings}
                     setSettings={setSettings}
-                    currentInput={{ activeNotes: [], volume: 0, snr: 0, clarity: 0, source: 'none' }} 
+                    currentInput={{ activeNotes: [], volume: 0, snr: 0, clarity: 0, harmonicity: 0, spectralCentroid: 0, source: 'none' }} 
                 />
             );
 

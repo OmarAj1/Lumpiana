@@ -5,68 +5,59 @@ import { NoteName } from '../types';
 interface PianoKeyProps {
   note: NoteName;
   isBlack: boolean;
-  isTarget: boolean; // The note the game wants
-  isInput: boolean; // The note the user is pressing
-  label?: string; // Optional: Only show if settings allow
+  isTarget: boolean; 
+  isInput: boolean; 
+  label?: string; 
   style?: React.CSSProperties;
   className?: string;
+  duration?: number; 
 }
 
-const PianoKey: React.FC<PianoKeyProps> = ({ note, isBlack, isTarget, isInput, label, style, className }) => {
+const PianoKey: React.FC<PianoKeyProps> = ({ note, isBlack, isTarget, isInput, label, style, className, duration }) => {
   
   // Base physics/layout
-  const commonClasses = "relative flex items-end justify-center transition-colors duration-75 ease-out select-none cursor-default overflow-visible";
+  const commonClasses = "relative flex items-end justify-center transition-all duration-100 ease-out select-none cursor-default overflow-visible";
   
-  // Determine Feedback Color State
-  // Priority: Input (Red/Green) > Target (Blue waiting)
   let bgClass = "";
   let shadowClass = "";
   let translateClass = "";
-  let borderClass = "";
+  let labelColor = "text-gray-400";
 
   if (isTarget && isInput) {
-      // HIT (Correct)
-      bgClass = isBlack 
-        ? "bg-green-500 from-green-400 to-green-600" 
-        : "bg-green-400 from-green-300 to-green-500";
-      shadowClass = "shadow-[0_0_30px_rgba(74,222,128,0.8)] z-50";
-      translateClass = "translate-y-1"; // Physical press
+      // HIT (Correct) - Clean Green Glow
+      bgClass = "bg-emerald-500";
+      shadowClass = "shadow-[0_0_30px_rgba(16,185,129,0.6)] z-50";
+      translateClass = isBlack ? "translate-y-1" : "translate-y-2 scale-[0.98]"; 
+      labelColor = "text-white";
   } else if (isInput) {
-      // WRONG (User error)
-      bgClass = isBlack 
-        ? "bg-red-600 from-red-500 to-red-700" 
-        : "bg-red-400 from-red-300 to-red-500";
-      shadowClass = "shadow-[0_0_30px_rgba(248,113,113,0.8)] z-50";
-      translateClass = "translate-y-1";
+      // WRONG (User error) - Soft Red
+      bgClass = "bg-rose-500";
+      shadowClass = "shadow-[0_0_20px_rgba(244,63,94,0.5)] z-50";
+      translateClass = isBlack ? "translate-y-1" : "translate-y-2 scale-[0.98]";
+      labelColor = "text-white";
   } else if (isTarget) {
-      // WAITING (Guide)
-      bgClass = isBlack 
-        ? "bg-blue-600 from-blue-500 to-blue-700" 
-        : "bg-blue-400 from-blue-300 to-blue-500";
-      shadowClass = "shadow-[0_0_25px_rgba(96,165,250,0.6)] animate-pulse z-40";
-      translateClass = "translate-y-0.5";
+      // WAITING (Guide) - Minimal Blue Indicator
+      bgClass = isBlack ? "bg-blue-600" : "bg-blue-100";
+      shadowClass = "shadow-[inset_0_0_20px_rgba(59,130,246,0.5)] z-40";
+      labelColor = "text-blue-600";
   } else {
-      // IDLE (Realistic Piano Look)
+      // IDLE
       if (isBlack) {
-          bgClass = "bg-gray-900 bg-[linear-gradient(145deg,#2a2a2a_0%,#000000_100%)]";
-          // Realistic glossy highlight on top
-          shadowClass = "shadow-[4px_8px_8px_rgba(0,0,0,0.5),inset_1px_1px_2px_rgba(255,255,255,0.2)]";
+          bgClass = "bg-zinc-900";
+          shadowClass = "shadow-[2px_4px_8px_rgba(0,0,0,0.6)]";
       } else {
-          bgClass = "bg-white bg-[linear-gradient(to_bottom,#ffffff_0%,#f3f4f6_100%)]";
-          shadowClass = "shadow-[inset_0_-1px_3px_rgba(0,0,0,0.2)]";
-          borderClass = "border-l border-r border-b border-gray-300";
+          bgClass = "bg-white";
+          shadowClass = "shadow-[inset_0_-10px_20px_rgba(0,0,0,0.05)]";
       }
   }
 
   const whiteKeyLayout = `
-    z-0 h-full rounded-b-[6px] text-gray-400 
-    active:bg-gray-100 
-    ${bgClass} ${borderClass} ${shadowClass} ${translateClass}
+    z-0 h-full rounded-b-[8px] border-x border-b border-[#d4d4d8]
+    ${bgClass} ${shadowClass} ${translateClass}
   `;
   
-  // Black keys are typically ~60-65% height of white keys
   const blackKeyLayout = `
-    z-20 h-[65%] absolute top-0 w-[60%] -translate-x-1/2 left-1/2 rounded-b-[4px] 
+    z-20 h-[65%] absolute top-0 w-[60%] -translate-x-1/2 left-1/2 rounded-b-[6px] border-x border-b border-black
     ${bgClass} ${shadowClass} ${translateClass}
   `;
 
@@ -75,21 +66,26 @@ const PianoKey: React.FC<PianoKeyProps> = ({ note, isBlack, isTarget, isInput, l
       className={`${commonClasses} ${isBlack ? blackKeyLayout : whiteKeyLayout} ${className || ''}`}
       style={style}
     >
-      {/* Glossy Reflection for Black Keys */}
+      {/* Specular Highlight for Black Keys (Subtle) */}
       {isBlack && !isTarget && !isInput && (
-          <div className="absolute top-[2%] left-[10%] w-[80%] h-[90%] rounded-b-[3px] bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+          <div className="absolute top-2 left-1 right-1 h-full bg-gradient-to-b from-white/10 to-transparent rounded-b-[4px] pointer-events-none" />
       )}
 
-      {/* Note Label (Only visible on White keys for cleanliness if prop passed) */}
+      {/* Duration / Hold Indicator */}
+      {isTarget && duration && duration > 1 && (
+          <div className="absolute bottom-0 w-full bg-current opacity-20" style={{ height: `${Math.min(100, duration * 15)}%` }} />
+      )}
+
+      {/* Note Label */}
       {!isBlack && label && (
-        <span className={`mb-3 text-[10px] font-bold tracking-widest uppercase ${isTarget || isInput ? 'text-white opacity-100' : 'text-gray-400 opacity-60'} transition-opacity`}>
+        <span className={`mb-4 text-[10px] font-medium tracking-wider uppercase ${labelColor} transition-colors`}>
           {label}
         </span>
       )}
       
-      {/* Highlight marker for guide on black keys */}
+      {/* Active Dot for Black Keys */}
       {isBlack && (isTarget || isInput) && (
-         <div className="absolute bottom-2 w-1.5 h-1.5 rounded-full bg-white/80" />
+         <div className="absolute bottom-3 w-1.5 h-1.5 rounded-full bg-white/90 shadow-glow" />
       )}
     </div>
   );

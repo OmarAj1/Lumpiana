@@ -116,6 +116,7 @@ export const authService = {
       
       const newStats: SongStats = {
           stars: Math.max(currentStats.stars, stats.stars || 0),
+          // Store the BEST percentage achieved
           highScore: Math.max(currentStats.highScore, stats.highScore || 0),
           timesPlayed: currentStats.timesPlayed + 1
       };

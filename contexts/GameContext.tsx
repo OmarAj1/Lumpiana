@@ -21,6 +21,10 @@ interface GameContextType {
   composedSongs: Song[];
   setComposedSongs: (songs: Song[]) => void;
   
+  // Session Persistence
+  lastSessionStats: { score: number, misses: number };
+  setLastSessionStats: (stats: { score: number, misses: number }) => void;
+
   // Auth Modal State
   isAuthModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
@@ -42,6 +46,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(OnboardingStep.WELCOME);
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument>(Instrument.PIANO);
   const [composedSongs, setComposedSongs] = useState<Song[]>([]);
+  const [lastSessionStats, setLastSessionStats] = useState({ score: 0, misses: 0 });
   
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<AuthView>('signIn');
@@ -90,6 +95,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       onboardingStep, setOnboardingStep,
       selectedInstrument, setSelectedInstrument,
       composedSongs, setComposedSongs,
+      lastSessionStats, setLastSessionStats,
       isAuthModalOpen, setAuthModalOpen,
       authModalView, setAuthModalView,
       signOut, toggleTheme
