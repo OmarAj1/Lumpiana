@@ -1,4 +1,5 @@
 
+
 import { AppSettings } from '../types';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -18,6 +19,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   darkMode: true, // Dark mode enabled by default
   noteDisplayStyle: 'Standard',
   accidentalStyle: 'Sharp',
+  pitchDetectionEnabled: true,
   
   flowMode: false, // Default to Stop & Wait (Strict)
   sheetMusicZoom: 100 // Default zoom level

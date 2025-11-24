@@ -1,4 +1,5 @@
 
+
 import { AudioAnalysisResult, NoteName, Instrument, DetectedNote } from '../types';
 import { NOTE_FREQUENCIES, NOTES_ORDER } from '../constants';
 
@@ -27,14 +28,26 @@ export class AudioEngine {
   // SPEECH REJECTION STATE
   // Maps MIDI Number -> Consecutive Frames Seen
   private noteHistory: Map<number, number> = new Map();
-  private readonly FRAMES_TO_CONFIRM = 2; // Reduced from 3 for faster response
-  private readonly DECAY_RATE = 1; // Reduced from 2 to prevent flickering
+  private readonly FRAMES_TO_CONFIRM = 3; // Increased to 3 to reduce sensitivity to transients
+  private readonly DECAY_RATE = 1; 
 
   private midiAccess: any = null;
   private activeMidiNotes: Map<number, number> = new Map(); 
 
   get micEnabled(): boolean {
     return this._micEnabled;
+  }
+
+  async setEnabled(enabled: boolean) {
+    if (enabled) {
+      if (!this.isListening && !this.audioContext) {
+         await this.initialize();
+      } else if (this.audioContext && this.audioContext.state === 'suspended') {
+         await this.audioContext.resume();
+      }
+    } else {
+      this.stop();
+    }
   }
 
   async initialize(): Promise<void> {
@@ -124,17 +137,7 @@ export class AudioEngine {
   }
 
   async restart() {
-      this.isListening = false;
-      if (this.mediaStreamSource) {
-          this.mediaStreamSource.mediaStream.getTracks().forEach(t => t.stop());
-          this.mediaStreamSource.disconnect();
-          this.mediaStreamSource = null;
-      }
-      if (this.audioContext) {
-          await this.audioContext.close();
-          this.audioContext = null;
-      }
-      this._micEnabled = false;
+      this.stop();
       await this.initialize();
   }
 
@@ -172,8 +175,8 @@ export class AudioEngine {
       const hpsLen = Math.ceil(buf.length / harmonics);
       const hps = new Float32Array(hpsLen).fill(0);
 
-      // Lower threshold slightly to catch quieter notes
-      const floorVal = 15 + (this.noiseFloorRMS * 500); 
+      // Higher threshold to filter noise
+      const floorVal = 25 + (this.noiseFloorRMS * 800); 
 
       for (let i = 0; i < hpsLen; i++) {
           if (buf[i] < floorVal) continue; 
@@ -188,7 +191,8 @@ export class AudioEngine {
       }
 
       const peaks: { freq: number, mag: number }[] = [];
-      const minMag = 200 + (this.noiseFloorRMS * 1000); 
+      // Significant increase in minimum magnitude required
+      const minMag = 350 + (this.noiseFloorRMS * 1500); 
       
       const startBin = Math.floor(60 / binSize); // Start ~60Hz
 
@@ -209,11 +213,11 @@ export class AudioEngine {
                   const sharpness = buf[i] / (neighborAvg + 1); 
 
                   // Check 2nd Harmonic Sharpness (Piano often has stronger 2nd harmonic)
-                  let isSharp = sharpness > 1.1;
+                  let isSharp = sharpness > 1.15; // Slightly stricter sharpness
                   if (!isSharp && h2Bin < buf.length - 1) {
                       const h2Neighbors = (buf[h2Bin-1] + buf[h2Bin+1]) / 2;
                       const h2Sharpness = buf[h2Bin] / (h2Neighbors + 1);
-                      if (h2Sharpness > 1.2) isSharp = true;
+                      if (h2Sharpness > 1.25) isSharp = true;
                   }
 
                   // Vocal Range Check (85Hz - 300Hz)
@@ -338,8 +342,8 @@ export class AudioEngine {
 
     const snr = 20 * Math.log10(rms / this.noiseFloorRMS);
     
-    // Silence Gate
-    if (rms < this.noiseFloorRMS * 1.5) {
+    // Silence Gate - Increased Strictness (2.5x noise floor)
+    if (rms < this.noiseFloorRMS * 2.5) {
         this.noteHistory.clear();
         return { activeNotes: [], volume: rms, snr, clarity: 0, harmonicity: 0, spectralCentroid: 0, source: 'mic', spectrum };
     }
@@ -447,7 +451,22 @@ export class AudioEngine {
 
   stop() {
     this.isListening = false;
-    if (this.audioContext?.state !== 'closed') this.audioContext?.close();
+    
+    // Explicitly stop media tracks to release microphone hardware and remove "recording" indicator
+    if (this.mediaStreamSource) {
+        this.mediaStreamSource.mediaStream.getTracks().forEach(t => t.stop());
+        this.mediaStreamSource.disconnect();
+        this.mediaStreamSource = null;
+    }
+
+    if (this.audioContext) {
+        if (this.audioContext.state !== 'closed') {
+             this.audioContext.close();
+        }
+        // Force re-initialization on next start
+        this.audioContext = null; 
+    }
+    
     this._micEnabled = false;
   }
 

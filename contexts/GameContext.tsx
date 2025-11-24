@@ -1,9 +1,11 @@
 
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppState, User, AppSettings, Song, OnboardingStep, Instrument, AuthView } from '../types';
 import { storageService } from '../services/storageService';
 import { authService } from '../services/authService';
 import { DEMO_SONG } from '../constants';
+import { audioEngine } from '../services/audioEngine';
 
 interface GameContextType {
   appState: AppState;
@@ -65,14 +67,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setComposedSongs(storageService.getComposedSongs());
   }, []);
 
-  // Settings Persistence
+  // Settings Persistence & Audio Engine Sync
   useEffect(() => {
     storageService.saveSettings(settings);
+    
+    // Theme
     if (settings.darkMode) {
         document.documentElement.classList.add('dark');
     } else {
         document.documentElement.classList.remove('dark');
     }
+
+    // Audio Engine Sync
+    if (settings.pitchDetectionEnabled) {
+       // Attempt to enable if allowed (requires user interaction context usually)
+       // If it fails due to autoplay policy, it will just stay suspended until interaction
+       audioEngine.setEnabled(true).catch(e => console.debug("Auto-start audio failed (waiting for interaction)", e));
+    } else {
+       audioEngine.setEnabled(false);
+    }
+
   }, [settings]);
 
   const signOut = () => {

@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState, useRef } from 'react';
 import { CogIcon, RefreshIcon } from '../components/Icons';
 import { AppState, AppSettings } from '../types';
@@ -193,16 +194,35 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
              {/* Audio & Data (Keep existing) */}
              <section className="space-y-6">
                 <h3 className="text-xl font-bold text-orange-400 border-b border-white/10 pb-2">Audio & Voice</h3>
-                {/* ... Audio Check ... */}
-                <div className="p-4 bg-white/5 rounded-xl space-y-4 border border-white/10">
+                
+                {/* Pitch Detection Toggle */}
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div>
+                        <p className="font-bold text-white">Pitch Detection (Microphone)</p>
+                        <p className="text-xs text-gray-500">Enable real-time audio analysis.</p>
+                    </div>
+                    <input 
+                        type="checkbox" 
+                        checked={settings.pitchDetectionEnabled}
+                        onChange={(e) => {
+                            const val = e.target.checked;
+                            setSettings(s => ({ ...s, pitchDetectionEnabled: val }));
+                            audioEngine.setEnabled(val);
+                        }}
+                        className="w-6 h-6 accent-blue-500"
+                    />
+                </div>
+
+                {/* Audio Check */}
+                <div className={`p-4 bg-white/5 rounded-xl space-y-4 border border-white/10 ${!settings.pitchDetectionEnabled ? 'opacity-50 grayscale' : ''}`}>
                     <div className="flex justify-between items-center">
                         <p className="font-bold">Microphone Check</p>
                         <div className="flex items-center gap-2">
                             {currentInput.source === 'midi' && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">MIDI Connected</span>}
                             <button 
                                 onClick={handleRestartMic}
-                                disabled={isRestarting}
-                                className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors flex items-center gap-2 text-xs"
+                                disabled={isRestarting || !settings.pitchDetectionEnabled}
+                                className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <RefreshIcon /> {isRestarting ? 'Restarting...' : 'Force Reconnect'}
                             </button>
@@ -221,7 +241,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                                  </>
                              ) : (
                                  <span className={currentInput.volume < 0.001 ? "text-red-400" : "text-gray-600"}>
-                                     {currentInput.volume < 0.001 ? "No Signal - Retrying..." : "Listening..."}
+                                     {settings.pitchDetectionEnabled ? (currentInput.volume < 0.001 ? "No Signal - Retrying..." : "Listening...") : "Detection Disabled"}
                                  </span>
                              )}
                         </div>

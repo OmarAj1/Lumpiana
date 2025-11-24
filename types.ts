@@ -132,6 +132,7 @@ export interface AppSettings {
   darkMode: boolean;          // Light/Dark mode
   noteDisplayStyle: NoteDisplayStyle;
   accidentalStyle: AccidentalStyle;
+  pitchDetectionEnabled: boolean; // Toggle mic usage
   
   // New Settings
   flowMode: boolean;          // If true, game doesn't stop on miss, just marks red
