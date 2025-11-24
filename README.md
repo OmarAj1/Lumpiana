@@ -1,14 +1,4 @@
-<div align="center">
-  <img width="1200" height="475" alt="Project Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 
-  # Virtuoso AI (Project Name)
-  
-  **A Next-Generation AI Application powered by Google Gemini.**
-  
-  [View in Google AI Studio](https://ai.studio/apps/drive/1FhSxJc2-1RBSinFMk1OMfa1xvgHJcOPu) · [Report Bug](https://github.com/username/repo/issues) · [Request Feature](https://github.com/username/repo/issues)
-</div>
-
----
 
 ## 📖 About
 This project represents a seamless integration between modern web technologies and the **Google Gemini API**. Designed/Exported via Google AI Studio, this application demonstrates how to leverage the Gemini 1.5 Pro/Flash models for [Insert brief description of what the app actually does, e.g., "generating musical arrangements" or "analyzing data"].
