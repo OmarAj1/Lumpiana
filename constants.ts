@@ -1,6 +1,6 @@
 
 
-import { NoteName, Song, NoteEvent } from './types';
+import { NoteName, Song, NoteEvent, SchaumBook } from './types';
 
 export const STAR_THRESHOLDS = {
     GOLD: 0.9,   // 3 Stars
@@ -22,6 +22,102 @@ export const NOTES_ORDER = [
   NoteName.Fs, NoteName.G, NoteName.Gs, NoteName.A, NoteName.As, NoteName.B
 ];
 
+// --- SCHAUM BOOK DATA ---
+export interface SchaumBookData {
+    id: SchaumBook;
+    title: string;
+    subtitle: string;
+    accentColor: string;
+    darkColor: string;
+    gradient: string;
+    shadow: string;
+    desc: string;
+    difficultyLabel: string;
+    icon: string;
+    particles: string[];
+}
+
+export const SCHAUM_BOOKS: SchaumBookData[] = [
+    { 
+      id: 'Pre-A', 
+      title: "Pre-A", 
+      subtitle: "The Green Book", 
+      accentColor: "#4ade80", 
+      darkColor: "#14532d", 
+      gradient: "linear-gradient(135deg, #4ade80 0%, #16a34a 100%)", 
+      shadow: "rgba(74, 222, 128, 0.4)", 
+      desc: "For the Earliest Beginner",
+      difficultyLabel: "Entry Level",
+      icon: "🌱",
+      particles: ["🍃", "🌿", "✨"]
+    },
+    { 
+      id: 'A', 
+      title: "Grade 1", 
+      subtitle: "The Red Book", 
+      accentColor: "#f87171", 
+      darkColor: "#7f1d1d",
+      gradient: "linear-gradient(135deg, #f87171 0%, #dc2626 100%)", 
+      shadow: "rgba(248, 113, 113, 0.4)", 
+      desc: "Foundations of Rhythm",
+      difficultyLabel: "Beginner",
+      icon: "🔥",
+      particles: ["⚡", "💥", "✨"]
+    },
+    { 
+      id: 'B', 
+      title: "Grade 1.5", 
+      subtitle: "The Blue Book", 
+      accentColor: "#60a5fa", 
+      darkColor: "#1e3a8a",
+      gradient: "linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)", 
+      shadow: "rgba(96, 165, 250, 0.4)", 
+      desc: "The Scales & Chords",
+      difficultyLabel: "Lower Int.",
+      icon: "🌊",
+      particles: ["💧", "❄️", "✨"]
+    },
+    { 
+      id: 'C', 
+      title: "Grade 2", 
+      subtitle: "The Purple Book", 
+      accentColor: "#a78bfa", 
+      darkColor: "#4c1d95",
+      gradient: "linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)", 
+      shadow: "rgba(167, 139, 250, 0.4)", 
+      desc: "Advanced Phrasing",
+      difficultyLabel: "Intermediate",
+      icon: "🔮",
+      particles: ["✨", "🟣", "🌙"]
+    },
+    { 
+      id: 'D', 
+      title: "Grade 2.5", 
+      subtitle: "The Orange Book", 
+      accentColor: "#fb923c", 
+      darkColor: "#7c2d12",
+      gradient: "linear-gradient(135deg, #fb923c 0%, #ea580c 100%)", 
+      shadow: "rgba(251, 146, 60, 0.4)", 
+      desc: "Concert Preparation",
+      difficultyLabel: "Advanced",
+      icon: "⚡",
+      particles: ["⭐", "☀️", "✨"]
+    },
+    { 
+      id: 'Virtuoso', 
+      title: "Virtuoso", 
+      subtitle: "The Grey Book", 
+      accentColor: "#9ca3af", 
+      darkColor: "#1f2937",
+      gradient: "linear-gradient(135deg, #9ca3af 0%, #4b5563 100%)", 
+      shadow: "rgba(156, 163, 175, 0.4)", 
+      desc: "Mastery Technicality",
+      difficultyLabel: "Master",
+      icon: "👑",
+      particles: ["💎", "🏆", "✨"]
+    },
+];
+
 // --- HELPER TO GENERATE LONG SONGS ---
 const shift = (notes: NoteEvent[], beats: number): NoteEvent[] => {
     return notes.map(n => ({ ...n, startTime: n.startTime + beats }));
@@ -35,6 +131,7 @@ export const DEMO_SONG: Song = {
   bpm: 60,
   category: 'Song',
   stage: 1,
+  book: 'Pre-A',
   notes: [
     { note: NoteName.E, octave: 4, duration: 1, startTime: 0, finger: 3 },
     { note: NoteName.E, octave: 4, duration: 1, startTime: 1, finger: 3 },
@@ -55,600 +152,186 @@ export const DEMO_SONG: Song = {
 };
 
 // ==========================================
-// STAGE 1: BEGINNER (Right Hand, Simple)
+// BOOK Pre-A (Green) - Fundamentals
 // ==========================================
-
-const s1_twinkle_theme: NoteEvent[] = [
-    { note: NoteName.C, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 1 },
-    { note: NoteName.G, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 3 },
-    { note: NoteName.A, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 5 },
-    { note: NoteName.G, octave: 4, duration: 2, startTime: 6 },
-    { note: NoteName.F, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.F, octave: 4, duration: 1, startTime: 9 },
-    { note: NoteName.E, octave: 4, duration: 1, startTime: 10 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 11 },
-    { note: NoteName.D, octave: 4, duration: 1, startTime: 12 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 13 },
-    { note: NoteName.C, octave: 4, duration: 2, startTime: 14 },
-];
-const s1_twinkle_bridge: NoteEvent[] = [
-    { note: NoteName.G, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 1 },
-    { note: NoteName.F, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.F, octave: 4, duration: 1, startTime: 3 },
-    { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 },
-    { note: NoteName.D, octave: 4, duration: 2, startTime: 6 },
-];
 
 const STAGE_1_SONGS: Song[] = [
     {
-        id: 's1-twinkle', title: 'Twinkle Twinkle Variations', artist: 'Trad.', difficulty: 'Beginner', bpm: 70, category: 'Song', stage: 1,
+        id: 'pre-a-woodchuck', title: 'The Wood-Chuck', artist: 'Schaum Pre-A', difficulty: 'Beginner', bpm: 60, category: 'Song', stage: 1, book: 'Pre-A',
         notes: [
-            ...s1_twinkle_theme,
-            ...shift(s1_twinkle_bridge, 16),
-            ...shift(s1_twinkle_bridge, 24),
-            ...shift(s1_twinkle_theme, 32),
-            ...shift(s1_twinkle_theme, 48)
+            // Based on C Major Position Chart (Green Book)
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 0, finger: 1, lyrics: "If" },
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 1, finger: 2, lyrics: "a" },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 2, finger: 3, lyrics: "wood" },
+            { note: NoteName.F, octave: 4, duration: 1, startTime: 3, finger: 4, lyrics: "chuck" },
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 4, finger: 5, lyrics: "could" },
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 5, finger: 5, lyrics: "chuck" },
+            { note: NoteName.G, octave: 4, duration: 2, startTime: 6, finger: 5, lyrics: "wood" },
+            
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 8, finger: 5, lyrics: "How" },
+            { note: NoteName.F, octave: 4, duration: 1, startTime: 9, finger: 4, lyrics: "much" },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 10, finger: 3, lyrics: "wood" },
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 11, finger: 2, lyrics: "??" },
+            { note: NoteName.C, octave: 4, duration: 2, startTime: 12, finger: 1, lyrics: "chuck?" },
         ]
     },
     {
-        id: 's1-jingle', title: 'Jingle Bells (Full)', artist: 'Pierpont', difficulty: 'Beginner', bpm: 80, category: 'Song', stage: 1,
+        id: 'pre-a-speedboat', title: 'The Speed Boat', artist: 'Schaum Pre-A', difficulty: 'Beginner', bpm: 70, category: 'Song', stage: 1, book: 'Pre-A',
         notes: [
-            { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 2 },
-            { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 },
-            { note: NoteName.E, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.C, octave: 4, duration: 1.5, startTime: 10 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 11.5 }, { note: NoteName.E, octave: 4, duration: 4, startTime: 12 },
-            ...shift([
-                { note: NoteName.F, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.F, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.F, octave: 4, duration: 1.5, startTime: 2 }, { note: NoteName.F, octave: 4, duration: 0.5, startTime: 3.5 },
-                { note: NoteName.F, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 6 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 7 },
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 10 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 11 },
-                { note: NoteName.D, octave: 4, duration: 2, startTime: 12 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 14 }
-            ], 16),
-            ...shift([
-                 { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 2 },
-                 { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
-            ], 32),
-             ...shift([
-                 { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 2 },
-                 { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
-            ], 48)
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 0, finger: 1, lyrics: "Put," },
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 1, finger: 2, lyrics: "put," },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 2, finger: 3, lyrics: "put," },
+            { note: NoteName.F, octave: 4, duration: 1, startTime: 3, finger: 4, lyrics: "put!" },
+            { note: NoteName.G, octave: 4, duration: 4, startTime: 4, finger: 5, lyrics: "Goes..." },
+            
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 8, finger: 5, lyrics: "flash" },
+            { note: NoteName.F, octave: 4, duration: 1, startTime: 9, finger: 4, lyrics: "y" },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 10, finger: 3, lyrics: "speed" },
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 11, finger: 2, lyrics: "boat." },
+            { note: NoteName.C, octave: 4, duration: 4, startTime: 12, finger: 1, lyrics: "." },
         ]
     },
     {
-        id: 's1-mary', title: 'Mary Had a Little Lamb', artist: 'Nursery', difficulty: 'Beginner', bpm: 70, category: 'Song', stage: 1,
+        id: 'pre-a-escalator', title: 'The Escalator', artist: 'Schaum Pre-A', difficulty: 'Beginner', bpm: 80, category: 'Song', stage: 1, book: 'Pre-A',
         notes: [
-            ...shift([
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 },
-                { note: NoteName.D, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.D, octave: 4, duration: 2, startTime: 10 },
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 12 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 13 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 14 },
-            ], 0),
-            ...shift([
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 },
-                { note: NoteName.D, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 10 },
-                { note: NoteName.D, octave: 4, duration: 1, startTime: 11 }, { note: NoteName.C, octave: 4, duration: 4, startTime: 12 }
-            ], 16),
-             ...shift([
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
-            ], 32),
-             ...shift([
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
-            ], 48)
-        ]
-    },
-    {
-        id: 's1-row', title: 'Row Row Row Your Boat', artist: 'Trad.', difficulty: 'Beginner', bpm: 70, category: 'Song', stage: 1,
-        notes: [
-            { note: NoteName.C, octave: 4, duration: 2, startTime: 0 },
-            { note: NoteName.C, octave: 4, duration: 2, startTime: 2 },
-            { note: NoteName.C, octave: 4, duration: 1.5, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 5.5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 },
-            { note: NoteName.E, octave: 4, duration: 1.5, startTime: 8 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 9.5 }, { note: NoteName.E, octave: 4, duration: 1.5, startTime: 10 }, { note: NoteName.F, octave: 4, duration: 0.5, startTime: 11.5 }, { note: NoteName.G, octave: 4, duration: 4, startTime: 12 },
-            ...shift([
-                { note: NoteName.C, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1 },
-                { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1.5 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2.5 },
-                { note: NoteName.E, octave: 4, duration: 0.5, startTime: 3 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 3.5 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 4 },
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 4.5 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 5 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 5.5 },
-                { note: NoteName.G, octave: 4, duration: 1.5, startTime: 6 }, { note: NoteName.F, octave: 4, duration: 0.5, startTime: 7.5 }, { note: NoteName.E, octave: 4, duration: 1.5, startTime: 8 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 9.5 }, { note: NoteName.C, octave: 4, duration: 4, startTime: 10 }
-            ], 16),
-             ...shift([
-                { note: NoteName.C, octave: 4, duration: 2, startTime: 0 },
-                { note: NoteName.C, octave: 4, duration: 2, startTime: 2 },
-                { note: NoteName.C, octave: 4, duration: 1.5, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 5.5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
-            ], 32)
-        ]
-    },
-    {
-        id: 's1-au-clair', title: 'Au Clair de la Lune', artist: 'French Folk', difficulty: 'Beginner', bpm: 65, category: 'Song', stage: 1,
-        notes: [
-            ...shift([
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 2, startTime: 6 },
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 10 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 11 },
-                { note: NoteName.C, octave: 4, duration: 4, startTime: 12 }
-            ], 0),
-            ...shift([
-                { note: NoteName.D, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.A, octave: 3, duration: 2, startTime: 4 }, { note: NoteName.A, octave: 3, duration: 2, startTime: 6 },
-                { note: NoteName.D, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.B, octave: 3, duration: 1, startTime: 10 }, { note: NoteName.A, octave: 3, duration: 1, startTime: 11 },
-                { note: NoteName.G, octave: 3, duration: 4, startTime: 12 }
-            ], 16),
-            ...shift([
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 1 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 2, startTime: 6 },
-                { note: NoteName.C, octave: 4, duration: 1, startTime: 8 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 9 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 10 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 11 },
-                { note: NoteName.C, octave: 4, duration: 4, startTime: 12 }
-            ], 32)
+            // Ascending C Major Scale (divided between hands)
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 0, hand: 'l', finger: 4 },
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 1, hand: 'l', finger: 3 },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 2, hand: 'l', finger: 2 },
+            { note: NoteName.F, octave: 4, duration: 1, startTime: 3, hand: 'l', finger: 1 },
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 4, hand: 'r', finger: 1 },
+            { note: NoteName.A, octave: 4, duration: 1, startTime: 5, hand: 'r', finger: 2 },
+            { note: NoteName.B, octave: 4, duration: 1, startTime: 6, hand: 'r', finger: 3 },
+            { note: NoteName.C, octave: 5, duration: 1, startTime: 7, hand: 'r', finger: 4 }
         ]
     }
 ];
 
 // ==========================================
-// STAGE 2: EARLY INTERMEDIATE (Hands Together)
+// BOOK A (Red) - Grade 1
 // ==========================================
-
-const s2_minuet_theme: NoteEvent[] = [
-    { note: NoteName.D, octave: 5, duration: 1, startTime: 0 }, 
-    { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1.5 }, 
-    { note: NoteName.B, octave: 4, duration: 0.5, startTime: 2 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 2.5 },
-    { note: NoteName.D, octave: 5, duration: 1, startTime: 3 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 5 },
-    // Bass
-    { note: NoteName.G, octave: 3, duration: 1, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 1, startTime: 1, hand: 'l' }, { note: NoteName.D, octave: 4, duration: 1, startTime: 2, hand: 'l' },
-    { note: NoteName.B, octave: 3, duration: 1, startTime: 3, hand: 'l' }, { note: NoteName.G, octave: 3, duration: 2, startTime: 4, hand: 'l' },
-    // Phrase 2
-    { note: NoteName.E, octave: 5, duration: 1, startTime: 6 }, 
-    { note: NoteName.C, octave: 5, duration: 0.5, startTime: 7 }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 7.5 }, 
-    { note: NoteName.E, octave: 5, duration: 0.5, startTime: 8 }, { note: NoteName.Fs, octave: 5, duration: 0.5, startTime: 8.5 },
-    { note: NoteName.G, octave: 5, duration: 1, startTime: 9 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 10 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 11 }
-];
 
 const STAGE_2_SONGS: Song[] = [
     {
-        id: 's2-minuet', title: 'Minuet in G', artist: 'J.S. Bach', difficulty: 'Intermediate', bpm: 90, category: 'Song', stage: 2,
+        id: 'a-swinging', title: 'Swinging Along', artist: 'Schaum Book A', difficulty: 'Beginner', bpm: 90, category: 'Song', stage: 2, book: 'A',
         notes: [
-            ...s2_minuet_theme,
-            ...shift(s2_minuet_theme, 12),
-            ...shift(s2_minuet_theme, 24),
-            ...shift(s2_minuet_theme, 36),
-            ...shift(s2_minuet_theme, 48)
+            // 6/8 Time feeling
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 0, finger: 5 }, 
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 1, finger: 3 }, 
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 2, finger: 5 },
+            { note: NoteName.C, octave: 5, duration: 1.5, startTime: 3, finger: 1, hand: 'l' }, // Cross over simulation for "Singing a song"
+            { note: NoteName.G, octave: 4, duration: 1.5, startTime: 4.5, finger: 5 },
+            
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 6, finger: 5 },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 7, finger: 3 },
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 8, finger: 1 },
+            { note: NoteName.G, octave: 3, duration: 3, startTime: 9, hand: 'l', finger: 5 }
         ]
     },
     {
-        id: 's2-new-world', title: 'New World Symphony (Largo)', artist: 'Dvorak', difficulty: 'Intermediate', bpm: 50, category: 'Song', stage: 2,
+        id: 'a-wishes', title: 'The Wishing Well', artist: 'Schaum Book A', difficulty: 'Beginner', bpm: 85, category: 'Song', stage: 2, book: 'A',
         notes: [
-            { note: NoteName.E, octave: 4, duration: 1.5, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1.5 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 2 },
-            { note: NoteName.E, octave: 4, duration: 1.5, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 5.5 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 6 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 7 },
-            { note: NoteName.E, octave: 4, duration: 1.5, startTime: 8 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 9.5 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 10 },
-            { note: NoteName.D, octave: 4, duration: 4, startTime: 12 },
-            { note: NoteName.C, octave: 3, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.G, octave: 2, duration: 4, startTime: 4, hand: 'l' },
-            { note: NoteName.C, octave: 3, duration: 4, startTime: 8, hand: 'l' }, { note: NoteName.G, octave: 2, duration: 4, startTime: 12, hand: 'l' },
-            ...shift([ { note: NoteName.E, octave: 4, duration: 1.5, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1.5 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 2 } ], 16),
-            ...shift([ { note: NoteName.E, octave: 4, duration: 1.5, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1.5 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 2 } ], 24),
-            ...shift([ { note: NoteName.E, octave: 4, duration: 1.5, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1.5 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 2 } ], 32),
-            ...shift([ { note: NoteName.E, octave: 4, duration: 1.5, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1.5 }, { note: NoteName.G, octave: 4, duration: 2, startTime: 2 } ], 40)
-        ]
-    },
-    {
-        id: 's2-surprise', title: 'Surprise Symphony', artist: 'Haydn', difficulty: 'Intermediate', bpm: 80, category: 'Song', stage: 2,
-        notes: [
-            { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1.5 },
-            { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2.5 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 3 },
-            { note: NoteName.F, octave: 4, duration: 0.5, startTime: 4 }, { note: NoteName.F, octave: 4, duration: 0.5, startTime: 4.5 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 5 }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 5.5 },
-            { note: NoteName.B, octave: 3, duration: 0.5, startTime: 6 }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 6.5 }, { note: NoteName.G, octave: 3, duration: 1, startTime: 7 },
-            { note: NoteName.G, octave: 3, duration: 2, startTime: 8, hand: 'l' }, { note: NoteName.C, octave: 4, duration: 2, startTime: 8, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 2, startTime: 8, hand: 'r' },
-            ...shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2.5 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 3 }
-            ], 12),
-            ...shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2.5 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 3 }
-            ], 20),
-            ...shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2.5 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 3 }
-            ], 28)
-        ]
-    },
-    {
-        id: 's2-musette', title: 'Musette in D', artist: 'J.S. Bach', difficulty: 'Intermediate', bpm: 90, category: 'Song', stage: 2,
-        notes: [
-            { note: NoteName.D, octave: 5, duration: 1, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1 }, 
-            { note: NoteName.D, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 2.5 }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 3.5 },
-            { note: NoteName.D, octave: 3, duration: 4, startTime: 0, hand: 'l' },
-            ...shift([
-               { note: NoteName.D, octave: 5, duration: 1, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1 }, 
-               { note: NoteName.D, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 2.5 }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 3.5 },
-               { note: NoteName.D, octave: 3, duration: 4, startTime: 0, hand: 'l' }
-            ], 4),
-            ...shift([
-               { note: NoteName.D, octave: 5, duration: 1, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1 }, 
-               { note: NoteName.D, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 2.5 }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 3.5 },
-               { note: NoteName.D, octave: 3, duration: 4, startTime: 0, hand: 'l' }
-            ], 8),
-            ...shift([
-               { note: NoteName.D, octave: 5, duration: 1, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1 }, 
-               { note: NoteName.D, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 2.5 }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 3.5 },
-               { note: NoteName.D, octave: 3, duration: 4, startTime: 0, hand: 'l' }
-            ], 12)
-        ]
-    },
-    {
-        id: 's2-scarborough', title: 'Scarborough Fair', artist: 'Trad.', difficulty: 'Intermediate', bpm: 90, category: 'Song', stage: 2,
-        notes: [
-            { note: NoteName.D, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 2 },
-            { note: NoteName.A, octave: 4, duration: 1, startTime: 3 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 5 },
-            { note: NoteName.E, octave: 4, duration: 1.5, startTime: 6 }, { note: NoteName.F, octave: 4, duration: 0.5, startTime: 7.5 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 8 }, 
-            { note: NoteName.D, octave: 4, duration: 3, startTime: 9 },
-            ...shift([
-                { note: NoteName.D, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 2 },
-                { note: NoteName.A, octave: 4, duration: 1, startTime: 3 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 5 }
-            ], 12),
-            ...shift([
-                { note: NoteName.D, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 2 },
-                { note: NoteName.A, octave: 4, duration: 1, startTime: 3 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 5 }
-            ], 24),
-            ...shift([
-                { note: NoteName.D, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 2 },
-                { note: NoteName.A, octave: 4, duration: 1, startTime: 3 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 5 }
-            ], 36)
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
+            { note: NoteName.E, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.C, octave: 4, duration: 2, startTime: 6 }
         ]
     }
 ];
 
 // ==========================================
-// STAGE 3: INTERMEDIATE
+// BOOK B (Blue) - Grade 1 1/2
 // ==========================================
 
 const STAGE_3_SONGS: Song[] = [
     {
-        id: 's3-fur-elise', title: 'Für Elise', artist: 'Beethoven', difficulty: 'Intermediate', bpm: 75, category: 'Song', stage: 3,
+        id: 'b-elevator', title: 'The Elevator', artist: 'Schaum Book B', difficulty: 'Intermediate', bpm: 70, category: 'Song', stage: 3, book: 'B',
         notes: [
-            { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 0.5 },
-            { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 1.5 },
-            { note: NoteName.E, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.B, octave: 4, duration: 0.5, startTime: 2.5 },
-            { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 3.5 },
-            { note: NoteName.A, octave: 4, duration: 2, startTime: 4 },
-            { note: NoteName.A, octave: 2, duration: 2, startTime: 4, hand: 'l' }, { note: NoteName.E, octave: 3, duration: 2, startTime: 4.5, hand: 'l' }, { note: NoteName.A, octave: 3, duration: 2, startTime: 5, hand: 'l' },
-            ...shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.B, octave: 4, duration: 2, startTime: 1.5 },
-                { note: NoteName.E, octave: 2, duration: 2, startTime: 1.5, hand: 'l' }, { note: NoteName.E, octave: 3, duration: 2, startTime: 2, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 2, startTime: 2.5, hand: 'l' }
-            ], 6),
-            ...shift([
-                { note: NoteName.E, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.B, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.C, octave: 5, duration: 2, startTime: 1.5 }
-            ], 9.5),
-            ...shift([
-                { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 0.5 },
-                { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.E, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.B, octave: 4, duration: 0.5, startTime: 2.5 }
-            ], 13.5),
-            ...shift([
-                { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 0.5 },
-                { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 1.5 }
-            ], 18)
+            // Arpeggios C Major
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 0, hand: 'r', finger: 1, lyrics: "Go" },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 1, hand: 'r', finger: 3, lyrics: "ing" },
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 2, hand: 'r', finger: 5, lyrics: "Up!" },
+            { note: NoteName.C, octave: 5, duration: 3, startTime: 3, hand: 'l', finger: 2, lyrics: "Floor!" },
+            
+            { note: NoteName.C, octave: 5, duration: 1, startTime: 6, hand: 'l', finger: 1, lyrics: "Go" },
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 7, hand: 'r', finger: 5, lyrics: "ing" },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 8, hand: 'r', finger: 3, lyrics: "Down" },
+            { note: NoteName.C, octave: 4, duration: 3, startTime: 9, hand: 'r', finger: 1, lyrics: "!" }
         ]
     },
     {
-        id: 's3-prelude', title: 'Prelude in C', artist: 'J.S. Bach', difficulty: 'Intermediate', bpm: 70, category: 'Song', stage: 3,
+        id: 'b-strangelands', title: 'Strange Lands', artist: 'Schumann (Schaum B)', difficulty: 'Intermediate', bpm: 60, category: 'Song', stage: 3, book: 'B',
         notes: [
-            ...[0, 2].map(offset => shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 0.5, hand: 'l' },
-                { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1, hand: 'r' }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1.5, hand: 'r' }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 2, hand: 'r' }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 2.5, hand: 'r' }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 3, hand: 'r' }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 3.5, hand: 'r' }
-            ], offset)).flat(),
-            ...[4, 6].map(offset => shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.D, octave: 4, duration: 0.5, startTime: 0.5, hand: 'l' },
-                { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1, hand: 'r' }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 1.5, hand: 'r' }, { note: NoteName.F, octave: 5, duration: 0.5, startTime: 2, hand: 'r' }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 2.5, hand: 'r' }, { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3, hand: 'r' }, { note: NoteName.F, octave: 5, duration: 0.5, startTime: 3.5, hand: 'r' }
-            ], offset)).flat(),
-            ...[8, 10, 12, 14, 16, 18, 20, 22].map(offset => shift([
-                { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 0.5, hand: 'l' },
-                { note: NoteName.G, octave: 4, duration: 0.5, startTime: 1, hand: 'r' }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1.5, hand: 'r' }
-            ], offset)).flat()
-        ]
-    },
-    {
-        id: 's3-gymnopedie', title: 'Gymnopédie No. 1', artist: 'Satie', difficulty: 'Intermediate', bpm: 60, category: 'Song', stage: 3,
-        notes: [
-            { note: NoteName.G, octave: 3, duration: 3, startTime: 0, hand: 'l' }, 
-            { note: NoteName.D, octave: 4, duration: 1, startTime: 1, hand: 'l' }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1, hand: 'r' }, 
-            { note: NoteName.D, octave: 3, duration: 3, startTime: 3, hand: 'l' },
-            { note: NoteName.Fs, octave: 5, duration: 4, startTime: 4, hand: 'r' },
-            { note: NoteName.A, octave: 5, duration: 4, startTime: 8, hand: 'r' },
-            { note: NoteName.G, octave: 5, duration: 4, startTime: 12, hand: 'r' },
-            { note: NoteName.F, octave: 5, duration: 4, startTime: 16, hand: 'r' },
-            { note: NoteName.C, octave: 5, duration: 2, startTime: 20, hand: 'r' }, { note: NoteName.B, octave: 4, duration: 2, startTime: 22, hand: 'r' },
-            ...shift([{ note: NoteName.G, octave: 3, duration: 3, startTime: 0, hand: 'l' }], 6),
-            ...shift([{ note: NoteName.G, octave: 3, duration: 3, startTime: 0, hand: 'l' }], 9),
-            ...shift([{ note: NoteName.G, octave: 3, duration: 3, startTime: 0, hand: 'l' }], 12),
-            ...shift([{ note: NoteName.G, octave: 3, duration: 3, startTime: 0, hand: 'l' }], 15)
-        ]
-    },
-    {
-        id: 's3-greensleeves', title: 'Greensleeves', artist: 'Trad.', difficulty: 'Intermediate', bpm: 100, category: 'Song', stage: 3,
-        notes: [
-            { note: NoteName.A, octave: 4, duration: 1, startTime: 0 },
-            { note: NoteName.C, octave: 5, duration: 2, startTime: 1 }, { note: NoteName.D, octave: 5, duration: 1, startTime: 3 },
-            { note: NoteName.E, octave: 5, duration: 1.5, startTime: 4 }, { note: NoteName.F, octave: 5, duration: 0.5, startTime: 5.5 }, { note: NoteName.E, octave: 5, duration: 1, startTime: 6 },
-            { note: NoteName.D, octave: 5, duration: 2, startTime: 7 }, { note: NoteName.B, octave: 4, duration: 1, startTime: 9 },
-            { note: NoteName.G, octave: 4, duration: 1.5, startTime: 10 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 11.5 }, { note: NoteName.B, octave: 4, duration: 1, startTime: 12 },
-            { note: NoteName.C, octave: 5, duration: 2, startTime: 13 },
-            ...shift([
-                { note: NoteName.A, octave: 4, duration: 1, startTime: 0 },
-                { note: NoteName.C, octave: 5, duration: 2, startTime: 1 }, { note: NoteName.D, octave: 5, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 5, duration: 1.5, startTime: 4 }, { note: NoteName.F, octave: 5, duration: 0.5, startTime: 5.5 }, { note: NoteName.E, octave: 5, duration: 1, startTime: 6 }
-            ], 16),
-            ...shift([
-                { note: NoteName.A, octave: 4, duration: 1, startTime: 0 },
-                { note: NoteName.C, octave: 5, duration: 2, startTime: 1 }, { note: NoteName.D, octave: 5, duration: 1, startTime: 3 },
-                { note: NoteName.E, octave: 5, duration: 1.5, startTime: 4 }, { note: NoteName.F, octave: 5, duration: 0.5, startTime: 5.5 }, { note: NoteName.E, octave: 5, duration: 1, startTime: 6 }
-            ], 32)
-        ]
-    },
-    {
-        id: 's3-swan-lake', title: 'Swan Lake Theme', artist: 'Tchaikovsky', difficulty: 'Intermediate', bpm: 80, category: 'Song', stage: 3,
-        notes: [
-            { note: NoteName.B, octave: 4, duration: 1, startTime: 0 }, 
-            { note: NoteName.E, octave: 5, duration: 3, startTime: 1 }, { note: NoteName.B, octave: 4, duration: 1, startTime: 4 }, { note: NoteName.C, octave: 5, duration: 1, startTime: 5 }, { note: NoteName.D, octave: 5, duration: 1, startTime: 6 },
-            { note: NoteName.B, octave: 4, duration: 3, startTime: 7 }, { note: NoteName.B, octave: 4, duration: 1, startTime: 10 },
-            { note: NoteName.C, octave: 5, duration: 3, startTime: 11 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 14 }, { note: NoteName.B, octave: 4, duration: 1, startTime: 15 }, { note: NoteName.C, octave: 5, duration: 1, startTime: 16 },
-            { note: NoteName.A, octave: 4, duration: 3, startTime: 17 },
-            ...shift([
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 1, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 1.5, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 2, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 2.5, hand: 'l' }
-            ], 0),
-            ...shift([
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 1, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 1.5, hand: 'l' }
-            ], 8),
-            ...shift([
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 0.5, startTime: 1, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 1.5, hand: 'l' }
-            ], 16)
+            // Introduction to Pedal (simplified)
+            { note: NoteName.E, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 2 },
+            { note: NoteName.G, octave: 4, duration: 2, startTime: 3 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 },
+            { note: NoteName.D, octave: 4, duration: 2, startTime: 6 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 8 }
         ]
     }
 ];
 
 // ==========================================
-// STAGE 4: ADVANCED INTERMEDIATE
+// BOOK C (Purple) - Grade 2
 // ==========================================
-
-const s4_canon_bass: NoteEvent[] = [
-    { note: NoteName.D, octave: 3, duration: 2, startTime: 0, hand: 'l' },
-    { note: NoteName.A, octave: 2, duration: 2, startTime: 2, hand: 'l' },
-    { note: NoteName.B, octave: 2, duration: 2, startTime: 4, hand: 'l' },
-    { note: NoteName.Fs, octave: 2, duration: 2, startTime: 6, hand: 'l' },
-    { note: NoteName.G, octave: 2, duration: 2, startTime: 8, hand: 'l' },
-    { note: NoteName.D, octave: 2, duration: 2, startTime: 10, hand: 'l' },
-    { note: NoteName.G, octave: 2, duration: 2, startTime: 12, hand: 'l' },
-    { note: NoteName.A, octave: 2, duration: 2, startTime: 14, hand: 'l' },
-];
 
 const STAGE_4_SONGS: Song[] = [
     {
-        id: 's4-canon', title: 'Canon in D (Full)', artist: 'Pachelbel', difficulty: 'Advanced', bpm: 70, category: 'Song', stage: 4,
+        id: 'c-camptown', title: 'Camptown Races', artist: 'Foster (Schaum C)', difficulty: 'Intermediate', bpm: 100, category: 'Song', stage: 4, book: 'C',
         notes: [
-            ...s4_canon_bass,
-            ...shift(s4_canon_bass, 16),
-            ...shift(s4_canon_bass, 32),
-            ...shift(s4_canon_bass, 48),
-            ...shift([
-                { note: NoteName.Fs, octave: 5, duration: 2, startTime: 0 }, { note: NoteName.E, octave: 5, duration: 2, startTime: 2 },
-                { note: NoteName.D, octave: 5, duration: 2, startTime: 4 }, { note: NoteName.Cs, octave: 5, duration: 2, startTime: 6 },
-                { note: NoteName.B, octave: 4, duration: 2, startTime: 8 }, { note: NoteName.A, octave: 4, duration: 2, startTime: 10 },
-                { note: NoteName.B, octave: 4, duration: 2, startTime: 12 }, { note: NoteName.Cs, octave: 5, duration: 2, startTime: 14 },
-            ], 16),
-            ...shift([
-                { note: NoteName.Fs, octave: 5, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 5, duration: 1, startTime: 1 },
-                { note: NoteName.A, octave: 5, duration: 1, startTime: 2 }, { note: NoteName.Fs, octave: 5, duration: 1, startTime: 3 },
-                { note: NoteName.G, octave: 5, duration: 1, startTime: 4 }, { note: NoteName.A, octave: 5, duration: 1, startTime: 5 },
-            ], 32)
+            { note: NoteName.G, octave: 4, duration: 1, startTime: 0, finger: 5 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 1, finger: 5 },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 2, finger: 3 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 3, finger: 5 },
+            { note: NoteName.A, octave: 4, duration: 1, startTime: 4, finger: 1 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 5, finger: 5 },
+            { note: NoteName.E, octave: 4, duration: 2, startTime: 6, finger: 3 }
         ]
     },
     {
-        id: 's4-turca', title: 'Rondo Alla Turca', artist: 'Mozart', difficulty: 'Advanced', bpm: 110, category: 'Song', stage: 4,
+        id: 'c-thunderer', title: 'The Thunderer', artist: 'Sousa (Schaum C)', difficulty: 'Intermediate', bpm: 110, category: 'Song', stage: 4, book: 'C',
         notes: [
-            ...shift([
-                { note: NoteName.B, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.C, octave: 5, duration: 1, startTime: 2 }, 
-                { note: NoteName.D, octave: 5, duration: 0.5, startTime: 3 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 3.5 }, { note: NoteName.B, octave: 4, duration: 0.5, startTime: 4 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 4.5 },
-                { note: NoteName.E, octave: 5, duration: 1, startTime: 5 }
-            ], 0),
-            ...shift([
-                { note: NoteName.B, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.C, octave: 5, duration: 1, startTime: 2 }
-            ], 8),
-            ...shift([
-                { note: NoteName.B, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.C, octave: 5, duration: 1, startTime: 2 }
-            ], 16),
-            ...shift([
-                { note: NoteName.B, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.C, octave: 5, duration: 1, startTime: 2 }
-            ], 24)
-        ]
-    },
-    {
-        id: 's4-entertainer', title: 'The Entertainer', artist: 'Scott Joplin', difficulty: 'Advanced', bpm: 70, category: 'Song', stage: 4,
-        notes: [
-            { note: NoteName.D, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1.5 },
-            { note: NoteName.B, octave: 4, duration: 0.5, startTime: 2.5 }, { note: NoteName.G, octave: 4, duration: 0.5, startTime: 3 }, 
-            { note: NoteName.D, octave: 4, duration: 0.5, startTime: 3.5 }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 4 }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 4.5 },
-            { note: NoteName.A, octave: 3, duration: 1, startTime: 5 }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 6 }, { note: NoteName.G, octave: 3, duration: 0.5, startTime: 6.5 },
-            ...shift([
-                { note: NoteName.D, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1.5 }
-            ], 8),
-            ...shift([
-                { note: NoteName.D, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1.5 }
-            ], 16),
-            ...shift([
-                { note: NoteName.D, octave: 5, duration: 0.5, startTime: 0 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 4, duration: 1, startTime: 1.5 }
-            ], 24)
-        ]
-    },
-    {
-        id: 's4-river', title: 'River Flows in You', artist: 'Yiruma', difficulty: 'Advanced', bpm: 65, category: 'Song', stage: 4,
-        notes: [
-            ...shift([
-                { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 5, duration: 0.5, startTime: 1.5 },
-                { note: NoteName.Gs, octave: 5, duration: 2, startTime: 2 },
-                { note: NoteName.A, octave: 5, duration: 0.5, startTime: 4 }, { note: NoteName.Gs, octave: 5, duration: 0.5, startTime: 4.5 }, { note: NoteName.A, octave: 5, duration: 0.5, startTime: 5 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 5.5 },
-            ], 0),
-            ...shift([
-                { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 5, duration: 0.5, startTime: 1.5 }
-            ], 8),
-            ...shift([
-                { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 5, duration: 0.5, startTime: 1.5 }
-            ], 16),
-            ...shift([
-                { note: NoteName.A, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Cs, octave: 5, duration: 0.5, startTime: 0.5 }, { note: NoteName.E, octave: 5, duration: 0.5, startTime: 1 }, { note: NoteName.A, octave: 5, duration: 0.5, startTime: 1.5 }
-            ], 24)
-        ]
-    },
-    {
-        id: 's4-maple', title: 'Maple Leaf Rag', artist: 'Scott Joplin', difficulty: 'Advanced', bpm: 90, category: 'Song', stage: 4,
-        notes: [
-            { note: NoteName.G, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' },
-            { note: NoteName.G, octave: 3, duration: 0.5, startTime: 1, hand: 'l' }, { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1.5, hand: 'l' },
-            ...shift([
-                { note: NoteName.G, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' }
-            ], 4),
-            ...shift([
-                { note: NoteName.G, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' }
-            ], 8),
-            ...shift([
-                { note: NoteName.G, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' }
-            ], 12),
-            ...shift([
-                { note: NoteName.G, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.B, octave: 3, duration: 0.5, startTime: 0.5, hand: 'l' }
-            ], 16)
+            // March style
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 3, duration: 0.5, startTime: 1 }, { note: NoteName.G, octave: 3, duration: 0.5, startTime: 1.5 },
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 3 },
+            { note: NoteName.G, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
         ]
     }
 ];
 
 // ==========================================
-// STAGE 5: ADVANCED
+// BOOK D (Orange) - Grade 2 1/2
 // ==========================================
 
 const STAGE_5_SONGS: Song[] = [
     {
-        id: 's5-moonlight', title: 'Moonlight Sonata (Mvt 1)', artist: 'Beethoven', difficulty: 'Expert', bpm: 54, category: 'Song', stage: 5,
+        id: 'd-harvest', title: 'A Harvest Melody', artist: 'Beethoven (Schaum D)', difficulty: 'Advanced', bpm: 70, category: 'Song', stage: 5, book: 'D',
         notes: [
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 4, startTime: 0, hand: 'l' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 0, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 0.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 0.66, hand: 'r' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 1, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 1.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 1.66, hand: 'r' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 2, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 2.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 2.66, hand: 'r' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 3, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 3.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 3.66, hand: 'r' }
-            ], 0),
-            ...shift([
-                { note: NoteName.B, octave: 2, duration: 4, startTime: 0, hand: 'l' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 0, hand: 'r' }, { note: NoteName.D, octave: 4, duration: 0.33, startTime: 0.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 0.66, hand: 'r' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 1, hand: 'r' }, { note: NoteName.D, octave: 4, duration: 0.33, startTime: 1.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 1.66, hand: 'r' }
-            ], 4),
-            ...shift([
-                { note: NoteName.A, octave: 2, duration: 4, startTime: 0, hand: 'l' },
-                { note: NoteName.A, octave: 3, duration: 0.33, startTime: 0, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 0.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 0.66, hand: 'r' }
-            ], 8),
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 4, startTime: 0, hand: 'l' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 0, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 0.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 0.66, hand: 'r' }
-            ], 12),
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 4, startTime: 0, hand: 'l' },
-                { note: NoteName.Gs, octave: 3, duration: 0.33, startTime: 0, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 0.33, startTime: 0.33, hand: 'r' }, { note: NoteName.E, octave: 4, duration: 0.33, startTime: 0.66, hand: 'r' }
-            ], 16)
+            // 6/8 Time
+            { note: NoteName.G, octave: 4, duration: 1.5, startTime: 0, finger: 5 }, 
+            { note: NoteName.E, octave: 4, duration: 0.5, startTime: 1.5, finger: 3 }, 
+            { note: NoteName.C, octave: 4, duration: 1, startTime: 2, finger: 1 },
+            
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 3, finger: 2 },
+            { note: NoteName.E, octave: 4, duration: 1, startTime: 4, finger: 3 },
+            { note: NoteName.F, octave: 4, duration: 1, startTime: 5, finger: 4 },
+            
+            { note: NoteName.E, octave: 4, duration: 2, startTime: 6, finger: 3 },
+            { note: NoteName.D, octave: 4, duration: 1, startTime: 8, finger: 2 }
         ]
     },
     {
-        id: 's5-clair', title: 'Clair de Lune', artist: 'Debussy', difficulty: 'Expert', bpm: 60, category: 'Song', stage: 5,
+        id: 'd-star', title: 'Star of Midnight', artist: 'Dvorak (Schaum D)', difficulty: 'Advanced', bpm: 60, category: 'Song', stage: 5, book: 'D',
         notes: [
-            { note: NoteName.F, octave: 4, duration: 1, startTime: 0, hand: 'l' }, { note: NoteName.Gs, octave: 4, duration: 1, startTime: 0, hand: 'r' },
-            { note: NoteName.F, octave: 4, duration: 1, startTime: 1, hand: 'l' }, { note: NoteName.Gs, octave: 4, duration: 1, startTime: 1, hand: 'r' },
-            ...shift([
-                { note: NoteName.F, octave: 3, duration: 2, startTime: 0, hand: 'l' }, { note: NoteName.C, octave: 4, duration: 2, startTime: 0, hand: 'r' }
-            ], 4),
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 2, startTime: 0, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 2, startTime: 0, hand: 'r' }
-            ], 8),
-            ...shift([
-                { note: NoteName.F, octave: 3, duration: 2, startTime: 0, hand: 'l' }, { note: NoteName.C, octave: 4, duration: 2, startTime: 0, hand: 'r' }
-            ], 12),
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 2, startTime: 0, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 2, startTime: 0, hand: 'r' }
-            ], 16)
-        ]
-    },
-    {
-        id: 's5-chopin', title: 'Nocturne Op.9 No.2', artist: 'Chopin', difficulty: 'Expert', bpm: 60, category: 'Song', stage: 5,
-        notes: [
-            { note: NoteName.As, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 5, duration: 1, startTime: 1 }, 
-            { note: NoteName.F, octave: 5, duration: 0.5, startTime: 2 }, { note: NoteName.G, octave: 5, duration: 0.5, startTime: 2.5 }, 
-            { note: NoteName.Ds, octave: 5, duration: 1, startTime: 3 },
-            { note: NoteName.Ds, octave: 3, duration: 3, startTime: 0, hand: 'l' },
-            ...shift([
-                { note: NoteName.As, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 5, duration: 1, startTime: 1 },
-                { note: NoteName.Ds, octave: 3, duration: 3, startTime: 0, hand: 'l' }
-            ], 4),
-            ...shift([
-                { note: NoteName.As, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 5, duration: 1, startTime: 1 },
-                { note: NoteName.Ds, octave: 3, duration: 3, startTime: 0, hand: 'l' }
-            ], 8),
-            ...shift([
-                { note: NoteName.As, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 5, duration: 1, startTime: 1 },
-                { note: NoteName.Ds, octave: 3, duration: 3, startTime: 0, hand: 'l' }
-            ], 12)
-        ]
-    },
-    {
-        id: 's5-waltz', title: 'Waltz in C# Minor', artist: 'Chopin', difficulty: 'Expert', bpm: 120, category: 'Song', stage: 5,
-        notes: [
-            { note: NoteName.Cs, octave: 4, duration: 1, startTime: 0, hand: 'r' },
-            { note: NoteName.Cs, octave: 4, duration: 1, startTime: 1, hand: 'r' },
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 1, startTime: 0, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 1, startTime: 1, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 1, startTime: 1, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 1, startTime: 2, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 1, startTime: 2, hand: 'l' }
-            ], 0),
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 1, startTime: 0, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 1, startTime: 1, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 1, startTime: 1, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 1, startTime: 2, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 1, startTime: 2, hand: 'l' }
-            ], 3),
-            ...shift([
-                { note: NoteName.Cs, octave: 3, duration: 1, startTime: 0, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 1, startTime: 1, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 1, startTime: 1, hand: 'l' },
-                { note: NoteName.E, octave: 3, duration: 1, startTime: 2, hand: 'l' }, { note: NoteName.Gs, octave: 3, duration: 1, startTime: 2, hand: 'l' }
-            ], 6)
-        ]
-    },
-    {
-        id: 's5-liebestraum', title: 'Liebestraum No. 3', artist: 'Liszt', difficulty: 'Expert', bpm: 70, category: 'Song', stage: 5,
-        notes: [
-            { note: NoteName.C, octave: 5, duration: 2, startTime: 0 }, { note: NoteName.Ds, octave: 5, duration: 1, startTime: 2 },
-            { note: NoteName.G, octave: 5, duration: 3, startTime: 3 },
-            ...shift([
-                { note: NoteName.Gs, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5, hand: 'l' }, { note: NoteName.Ds, octave: 4, duration: 0.5, startTime: 1, hand: 'l' },
-                { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1.5, hand: 'r' }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 2, hand: 'r' }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 2.5, hand: 'r' }
-            ], 0),
-            ...shift([
-                { note: NoteName.Gs, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5, hand: 'l' }, { note: NoteName.Ds, octave: 4, duration: 0.5, startTime: 1, hand: 'l' },
-                { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1.5, hand: 'r' }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 2, hand: 'r' }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 2.5, hand: 'r' }
-            ], 3),
-            ...shift([
-                { note: NoteName.Gs, octave: 3, duration: 0.5, startTime: 0, hand: 'l' }, { note: NoteName.C, octave: 4, duration: 0.5, startTime: 0.5, hand: 'l' }, { note: NoteName.Ds, octave: 4, duration: 0.5, startTime: 1, hand: 'l' },
-                { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 1.5, hand: 'r' }, { note: NoteName.C, octave: 5, duration: 0.5, startTime: 2, hand: 'r' }, { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: 2.5, hand: 'r' }
-            ], 6)
+            // Largo
+            { note: NoteName.E, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 3 },
+            { note: NoteName.E, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 6 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 7 }
         ]
     }
 ];
 
 // ==========================================
-// STAGE 6: MASTER (Virtuoso)
+// VIRTUOSO (Master) - Advanced Pieces
 // ==========================================
 
 const STAGE_6_SONGS: Song[] = [
     {
-        id: 's6-bumblebee', title: 'Flight of the Bumblebee', artist: 'Rimsky-Korsakov', difficulty: 'Master', bpm: 140, category: 'Song', stage: 6,
+        id: 's6-bumblebee', title: 'Flight of the Bumblebee', artist: 'Rimsky-Korsakov', difficulty: 'Master', bpm: 140, category: 'Song', stage: 6, book: 'Virtuoso',
         notes: [
             ...Array.from({ length: 30 }).flatMap((_, i) => {
                 const start = i * 2;
@@ -666,7 +349,7 @@ const STAGE_6_SONGS: Song[] = [
         ]
     },
     {
-        id: 's6-fantasie', title: 'Fantaisie-Impromptu', artist: 'Chopin', difficulty: 'Master', bpm: 140, category: 'Song', stage: 6,
+        id: 's6-fantasie', title: 'Fantaisie-Impromptu', artist: 'Chopin', difficulty: 'Master', bpm: 140, category: 'Song', stage: 6, book: 'Virtuoso',
         notes: [
             ...Array.from({ length: 10 }).flatMap((_, i) => {
                 const s = i * 4;
@@ -680,52 +363,6 @@ const STAGE_6_SONGS: Song[] = [
                     { note: NoteName.E, octave: 5, duration: 1, startTime: s + 3, hand: 'r' },
                 ];
             })
-        ]
-    },
-    {
-        id: 's6-campanella', title: 'La Campanella', artist: 'Liszt', difficulty: 'Master', bpm: 100, category: 'Song', stage: 6,
-        notes: [
-            ...Array.from({ length: 20 }).flatMap((_, i) => {
-                const s = i * 2;
-                return [
-                    { note: NoteName.Ds, octave: 6, duration: 0.5, startTime: s, hand: 'r' },
-                    { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: s + 0.5, hand: 'r' },
-                    { note: NoteName.Ds, octave: 6, duration: 0.5, startTime: s + 1, hand: 'r' },
-                    { note: NoteName.Ds, octave: 5, duration: 0.5, startTime: s + 1.5, hand: 'r' }
-                ];
-            })
-        ]
-    },
-    {
-        id: 's6-rachmaninoff', title: 'Piano Concerto No. 2', artist: 'Rachmaninoff', difficulty: 'Master', bpm: 60, category: 'Song', stage: 6,
-        notes: [
-            ...shift([
-                { note: NoteName.F, octave: 1, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.F, octave: 2, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.F, octave: 3, duration: 4, startTime: 0, hand: 'r' }, { note: NoteName.As, octave: 3, duration: 4, startTime: 0, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 4, startTime: 0, hand: 'r' },
-                { note: NoteName.C, octave: 1, duration: 4, startTime: 4, hand: 'l' }, { note: NoteName.C, octave: 2, duration: 4, startTime: 4, hand: 'l' }, { note: NoteName.E, octave: 3, duration: 4, startTime: 4, hand: 'r' }, { note: NoteName.G, octave: 3, duration: 4, startTime: 4, hand: 'r' }, { note: NoteName.C, octave: 4, duration: 4, startTime: 4, hand: 'r' },
-            ], 0),
-            ...shift([
-                { note: NoteName.F, octave: 1, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.F, octave: 2, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.F, octave: 3, duration: 4, startTime: 0, hand: 'r' }, { note: NoteName.As, octave: 3, duration: 4, startTime: 0, hand: 'r' }, { note: NoteName.Cs, octave: 4, duration: 4, startTime: 0, hand: 'r' },
-            ], 8),
-            ...shift([
-                { note: NoteName.C, octave: 1, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.C, octave: 2, duration: 4, startTime: 0, hand: 'l' }, { note: NoteName.E, octave: 3, duration: 4, startTime: 0, hand: 'r' }, { note: NoteName.G, octave: 3, duration: 4, startTime: 0, hand: 'r' }, { note: NoteName.C, octave: 4, duration: 4, startTime: 0, hand: 'r' },
-            ], 12)
-        ]
-    },
-    {
-        id: 's6-rhapsody', title: 'Hungarian Rhapsody No. 2', artist: 'Liszt', difficulty: 'Master', bpm: 90, category: 'Song', stage: 6,
-        notes: [
-            { note: NoteName.Cs, octave: 4, duration: 4, startTime: 0 }, { note: NoteName.Fs, octave: 4, duration: 4, startTime: 0 }, { note: NoteName.As, octave: 4, duration: 4, startTime: 0 },
-            { note: NoteName.Cs, octave: 3, duration: 1, startTime: 4, hand: 'l' }, { note: NoteName.Fs, octave: 3, duration: 1, startTime: 5, hand: 'l' },
-            { note: NoteName.As, octave: 3, duration: 1, startTime: 6, hand: 'l' }, { note: NoteName.Cs, octave: 4, duration: 1, startTime: 7, hand: 'l' },
-            ...shift([
-                { note: NoteName.Fs, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.As, octave: 4, duration: 0.5, startTime: 1.5 }
-            ], 8),
-            ...shift([
-                { note: NoteName.Fs, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.As, octave: 4, duration: 0.5, startTime: 1.5 }
-            ], 10),
-            ...shift([
-                { note: NoteName.Fs, octave: 4, duration: 0.5, startTime: 0 }, { note: NoteName.Gs, octave: 4, duration: 0.5, startTime: 0.5 }, { note: NoteName.A, octave: 4, duration: 0.5, startTime: 1 }, { note: NoteName.As, octave: 4, duration: 0.5, startTime: 1.5 }
-            ], 12)
         ]
     }
 ];

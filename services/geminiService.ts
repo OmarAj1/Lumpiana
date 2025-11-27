@@ -11,10 +11,22 @@ let aiInstance: GoogleGenAI | null = null;
 
 const getAi = (): GoogleGenAI => {
   if (!aiInstance) {
+    if (!API_KEY) {
+        console.error("Luma Security: Missing API Key. AI features disabled.");
+        throw new Error("API Key is missing from environment variables.");
+    }
     aiInstance = new GoogleGenAI({ apiKey: API_KEY });
   }
   return aiInstance;
 };
+
+// SECURITY: Strict Safety Settings to prevent harmful content generation
+const STRICT_SAFETY_SETTINGS = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+];
 
 // Helper to strip Markdown code blocks and fix infinite decimals
 const sanitizeAndRepairJson = (text: string): string => {
@@ -78,6 +90,7 @@ export const generateLesson = async (level: string, genre: string) => {
       model: model,
       contents: prompt,
       config: {
+        safetySettings: STRICT_SAFETY_SETTINGS,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -145,12 +158,7 @@ export const generateSongFromTitle = async (songTitle: string, artist?: string) 
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-          safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-          ],
+          safetySettings: STRICT_SAFETY_SETTINGS,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -234,6 +242,7 @@ export const generateWorkout = async (weakness?: string) => {
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
+        safetySettings: STRICT_SAFETY_SETTINGS,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -280,6 +289,7 @@ export const getFeedback = async (score: number, misses: number) => {
      const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: `A piano student just finished a lesson. Score: ${score}. Misses: ${misses}. Give a short 1-sentence tip.`,
+      config: { safetySettings: STRICT_SAFETY_SETTINGS }
     });
     return response.text;
   } catch (e) {
@@ -300,6 +310,7 @@ export const generateAccompaniment = async (recentNotes: string[]) => {
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
+        safetySettings: STRICT_SAFETY_SETTINGS,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -338,6 +349,7 @@ export const speakText = async (text: string): Promise<void> => {
       model: "gemini-2.5-flash-preview-tts",
       contents: { parts: [{ text: text }] },
       config: {
+        safetySettings: STRICT_SAFETY_SETTINGS,
         responseModalities: [Modality.AUDIO],
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } },
       },

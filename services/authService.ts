@@ -25,26 +25,20 @@ export const authService = {
 
     // Admin Backdoor
     if (tagOrEmail === 'admin' && password === 'admin') {
-        const adminUser: User = {
-            id: 'admin',
-            email: 'admin@luma.ai',
-            password: 'admin',
-            name: 'Administrator',
-            tag: 'admin',
-            isAdmin: true,
-            xp: 99999,
-            streak: 999,
-            level: 100,
-            progress: {}
-        };
-        // Ensure admin exists in DB if not already
-        const users = getDb();
-        if (!users.find(u => u.id === 'admin')) {
-            users.push(adminUser);
-            saveDb(users);
-        }
-        localStorage.setItem(CURRENT_USER_KEY, adminUser.id);
-        return adminUser;
+      const adminUser: User = {
+        id: 'admin-user',
+        email: 'admin@luma.com',
+        password: 'admin',
+        name: 'Admin User',
+        tag: 'admin',
+        isAdmin: true,
+        xp: 99999,
+        streak: 999,
+        level: 99,
+        progress: {}
+      };
+      localStorage.setItem(CURRENT_USER_KEY, adminUser.id);
+      return adminUser;
     }
 
     const users = getDb();
@@ -67,7 +61,10 @@ export const authService = {
     if (!email.includes('@')) throw new Error('Invalid email address');
     if (users.some(u => u.email === email)) throw new Error('Email already exists');
     if (users.some(u => u.tag === tag)) throw new Error('Tag is already taken');
-    if (tag.toLowerCase() === 'admin') throw new Error('Cannot use reserved tag "admin"');
+    
+    // SECURITY: Prevent registration of system reserved handles
+    const reservedTags = ['admin', 'moderator', 'system', 'root', 'support'];
+    if (reservedTags.includes(tag.toLowerCase())) throw new Error('This tag is reserved');
 
     const newUser: User = {
       id: crypto.randomUUID(),
@@ -95,11 +92,33 @@ export const authService = {
   async getCurrentUser(): Promise<User | null> {
     const id = localStorage.getItem(CURRENT_USER_KEY);
     if (!id) return null;
+    
+    // Check for admin session
+    if (id === 'admin-user') {
+       return {
+        id: 'admin-user',
+        email: 'admin@luma.com',
+        password: 'admin',
+        name: 'Admin User',
+        tag: 'admin',
+        isAdmin: true,
+        xp: 99999,
+        streak: 999,
+        level: 99,
+        progress: {}
+      };
+    }
+
     const users = getDb();
     return users.find(u => u.id === id) || null;
   },
 
   async updateUserProgress(userId: string, songId: string, stats: Partial<SongStats>, xpGained: number): Promise<User> {
+      // Don't save progress for admin user
+      if (userId === 'admin-user') {
+          return await this.getCurrentUser() as User;
+      }
+
       const users = getDb();
       const userIndex = users.findIndex(u => u.id === userId);
       if (userIndex === -1) throw new Error('User not found');

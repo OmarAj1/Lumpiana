@@ -33,7 +33,9 @@ export type NoteDisplayStyle = 'Standard' | 'ScaleDegree' | 'Lyrics' | 'NoteName
 
 export type AccidentalStyle = 'Sharp' | 'Flat';
 
+// Updated to reflect Schaum Books
 export type SongStage = 1 | 2 | 3 | 4 | 5 | 6;
+export type SchaumBook = 'Pre-A' | 'A' | 'B' | 'C' | 'D' | 'Virtuoso';
 
 export interface NoteEvent {
   note: NoteName;
@@ -63,7 +65,8 @@ export interface Song {
   description?: string;
   preferredInstrument?: Instrument;
   category: SongCategory;
-  stage?: SongStage; // 1 to 6
+  stage?: SongStage; 
+  book?: SchaumBook; // Added for Schaum Course
   keySignature?: string; // e.g. "C", "G", "F"
 }
 

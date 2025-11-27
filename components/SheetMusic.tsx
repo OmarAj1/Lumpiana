@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useRef } from 'react';
 import { NoteEvent, AudioAnalysisResult, NoteName, NoteStatus, LoopRegion, AppSettings } from '../types';
 
@@ -42,14 +41,6 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
     return centerY - (stepsFromB4 * (STAFF_LINE_SPACING / 2));
   };
 
-  const getScaleDegree = (note: NoteName): string => {
-     const mapping: Record<string, string> = {
-         'C': '1', 'C#': '1', 'D': '2', 'D#': '2', 'E': '3',
-         'F': '4', 'F#': '4', 'G': '5', 'G#': '5', 'A': '6', 'A#': '6', 'B': '7'
-     };
-     return mapping[note] || '';
-  };
-
   const formatAccidental = (note: string, style: 'Sharp' | 'Flat' = 'Sharp') => {
       if (!note.includes('#')) return null;
       return style === 'Sharp' ? '♯' : '♭';
@@ -74,7 +65,6 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       const height = rect.height;
       const centerY = height / 2;
 
-      const displayStyle = settings?.noteDisplayStyle || 'Standard';
       const accidentalStyle = settings?.accidentalStyle || 'Sharp';
 
       ctx.clearRect(0, 0, width, height);
@@ -123,7 +113,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       
       // Draw Clefs with correct font stack to ensure symbols render
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = 'normal 50px "Times New Roman", serif'; // Explicit font family
+      ctx.font = 'normal 50px "Times New Roman", serif'; 
       ctx.fillText('𝄞', 15, trebleY + 15);
       ctx.fillText('𝄢', 15, bassY + 12);
 
@@ -143,9 +133,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
              
              ctx.strokeStyle = '#60a5fa';
              ctx.lineWidth = 2;
-             // Left bracket
              ctx.beginPath(); ctx.moveTo(loopStartX + 10, 20); ctx.lineTo(loopStartX, 20); ctx.lineTo(loopStartX, height - 20); ctx.lineTo(loopStartX + 10, height - 20); ctx.stroke();
-             // Right bracket
              ctx.beginPath(); ctx.moveTo(loopStartX + loopWidth - 10, 20); ctx.lineTo(loopStartX + loopWidth, 20); ctx.lineTo(loopStartX + loopWidth, height - 20); ctx.lineTo(loopStartX + loopWidth - 10, height - 20); ctx.stroke();
 
              ctx.fillStyle = '#60a5fa';
@@ -216,14 +204,11 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
 
             // Draw Note Head
             ctx.beginPath();
-            // Tilted ellipse for realistic look
             ctx.ellipse(x, y, NOTE_RADIUS * 1.3, NOTE_RADIUS * 0.9, -0.2, 0, 2 * Math.PI);
             ctx.fillStyle = fillStyle;
             ctx.shadowColor = shadowColor;
             ctx.shadowBlur = shadowBlur;
             ctx.fill();
-
-            // Reset shadow
             ctx.shadowBlur = 0;
 
             // Stem
@@ -239,7 +224,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
             // Accidental
             const accidental = formatAccidental(noteEvent.note, accidentalStyle);
             if (accidental) {
-                ctx.font = '20px serif'; // Larger font for accidentals
+                ctx.font = '20px serif';
                 ctx.fillStyle = fillStyle;
                 ctx.fillText(accidental, x - 22, y + 8);
             }
@@ -249,36 +234,30 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
                 ctx.fillStyle = status === NoteStatus.CORRECT ? '#4ade80' : 'rgba(255, 255, 255, 0.7)';
                 ctx.font = 'bold 11px Inter, sans-serif';
                 ctx.textAlign = 'center';
-                
-                // Position logic: Left Hand (Bass) -> Below note, Right Hand (Treble) -> Above note
-                // Exception: if stem direction forces it elsewhere, but keeping it simple usually works best for learners
                 const fingerY = isLeftHand ? y + 22 : y - 22;
-                
                 ctx.fillText(noteEvent.finger.toString(), x, fingerY);
             }
 
-            // Labels (Scale Degree / Lyrics / Note Name)
-            let labelText = '';
-            if (displayStyle === 'ScaleDegree') {
-                labelText = getScaleDegree(noteEvent.note);
-                // Simple debounce for scale degree (don't repeat)
-                for (let back = 1; back <= 3; back++) {
-                    const prev = songNotes[index - back];
-                    if (prev && prev.note === noteEvent.note) labelText = '';
-                }
-            } else if (displayStyle === 'Lyrics') {
-                labelText = noteEvent.lyrics || ''; 
-            } else if (displayStyle === 'NoteName') {
-                labelText = noteEvent.note;
+            ctx.textAlign = 'center';
+            
+            // --- INSTRUCTIONAL TEXT (LYRICS - BELOW) ---
+            if (noteEvent.lyrics) {
+                ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                ctx.font = 'bold 14px Inter, sans-serif';
+                // Standardize lyric position well below the staff area
+                const lyricY = targetStaffY === trebleY ? trebleY + 100 : bassY + 100; 
+                ctx.fillText(noteEvent.lyrics, x, lyricY);
             }
 
-            if (labelText && displayStyle !== 'Standard') {
-                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                ctx.font = 'bold 10px Inter, sans-serif';
-                ctx.textAlign = 'center';
-                // Adjust label position if finger number is present to avoid overlap
-                const labelOffset = noteEvent.finger ? (isLeftHand ? 34 : -34) : -14;
-                ctx.fillText(labelText, x, y + labelOffset);
+            // --- NOTE LETTER HINT (ABOVE) ---
+            // Schaum style: Letter hint above, lyrics below.
+            // We show this if settings allow OR if lyrics are present (implying "Instructional/Book" mode)
+            if (settings?.showNoteLabels || noteEvent.lyrics) {
+                ctx.fillStyle = 'rgba(100, 200, 255, 0.9)'; 
+                ctx.font = 'bold 12px monospace';
+                // Position hint above note (or below if note is high up, simple logic for now: always above)
+                const hintY = y - 30;
+                ctx.fillText(noteEvent.note, x, hintY);
             }
         });
       }

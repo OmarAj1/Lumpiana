@@ -12,8 +12,8 @@ interface AuthModalProps {
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView, onAuthSuccess }) => {
   const [view, setView] = useState<AuthView>(initialView);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin');
+  const [password, setPassword] = useState('admin');
   const [name, setName] = useState('');
   const [tag, setTag] = useState('');
   const [error, setError] = useState('');
