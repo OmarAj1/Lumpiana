@@ -1,5 +1,4 @@
 
-
 import { AudioAnalysisResult, NoteName, Instrument, DetectedNote } from '../types';
 import { NOTE_FREQUENCIES, NOTES_ORDER } from '../constants';
 
@@ -8,34 +7,47 @@ export class AudioEngine {
   private analyser: AnalyserNode | null = null;
   private mediaStreamSource: MediaStreamAudioSourceNode | null = null;
   
-  // DSP Nodes for Cleanup
+  // DSP Nodes
   private inputGainNode: GainNode | null = null; 
   private highPassFilter: BiquadFilterNode | null = null; 
   private lowPassFilter: BiquadFilterNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
   
+  // Buffers (Allocated once to avoid GC thrashing)
   private buffer: Float32Array = new Float32Array(2048);
   private frequencyBuffer: Uint8Array = new Uint8Array(8192); 
-  
+  private hpsBuffer: Float32Array | null = null; // Reusable HPS buffer
+  private spectrumBuffer: number[] = new Array(64).fill(0); // Reusable UI spectrum
+
   private isListening: boolean = false;
   private mainGain: GainNode | null = null;
   private currentInstrument: Instrument = Instrument.PIANO;
   private _micEnabled: boolean = false;
+  private synthesizedPianoEnabled: boolean = true; // New state to control internal piano sound
   
   // Adaptive Noise Cancellation State
   private noiseFloorRMS: number = 0.01;
   
   // SPEECH REJECTION STATE
-  // Maps MIDI Number -> Consecutive Frames Seen
   private noteHistory: Map<number, number> = new Map();
-  private readonly FRAMES_TO_CONFIRM = 3; // Increased to 3 to reduce sensitivity to transients
+  private readonly FRAMES_TO_CONFIRM = 3; 
   private readonly DECAY_RATE = 1; 
 
+  // MIDI
   private midiAccess: any = null;
   private activeMidiNotes: Map<number, number> = new Map(); 
 
+  // OPTIMIZATION FLAGS
+  private lastChordCheckTime: number = 0;
+  private cachedChordName: string | undefined = undefined;
+  private readonly LOG_2 = Math.log(2); // Pre-calculate constant
+
   get micEnabled(): boolean {
     return this._micEnabled;
+  }
+
+  setSynthesizedPianoEnabled(enabled: boolean) {
+    this.synthesizedPianoEnabled = enabled;
   }
 
   async setEnabled(enabled: boolean) {
@@ -109,6 +121,9 @@ export class AudioEngine {
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 8192; 
         this.analyser.smoothingTimeConstant = 0.1;
+        
+        // Allocate HPS buffer once based on FFT size
+        this.hpsBuffer = new Float32Array(this.analyser.frequencyBinCount);
 
         this.mediaStreamSource
             .connect(this.highPassFilter)
@@ -169,20 +184,31 @@ export class AudioEngine {
   }
 
   private detectPolyphonic(buf: Uint8Array, sampleRate: number): DetectedNote[] {
+      // MEMORY OPTIMIZATION: Reuse buffer instead of allocating new Float32Array every frame
+      if (!this.hpsBuffer) return [];
+      const hps = this.hpsBuffer;
+      hps.fill(0); // Reset buffer
+
       const binSize = sampleRate / this.analyser!.fftSize;
       const harmonics = 4; 
-      
       const hpsLen = Math.ceil(buf.length / harmonics);
-      const hps = new Float32Array(hpsLen).fill(0);
 
       // Higher threshold to filter noise
       const floorVal = 25 + (this.noiseFloorRMS * 800); 
 
-      for (let i = 0; i < hpsLen; i++) {
+      // PERFORMANCE OPTIMIZATION: Only calculate HPS for valid piano range (~27Hz to ~4200Hz)
+      // No need to check 0-20Hz or >5000Hz for fundamental pitch
+      const minBin = Math.floor(25 / binSize);
+      const maxBin = Math.floor(4200 / binSize); 
+      const loopEnd = Math.min(maxBin, hpsLen);
+
+      // 1. Calculate HPS Product
+      for (let i = minBin; i < loopEnd; i++) {
           if (buf[i] < floorVal) continue; 
           let product = buf[i];
           for (let h = 2; h <= harmonics; h++) {
               const downsampledIndex = i * h;
+              // Boundary check is implicit by loopEnd calculation, but safety first
               if (downsampledIndex < buf.length) {
                   product += buf[downsampledIndex]; 
               }
@@ -190,14 +216,13 @@ export class AudioEngine {
           hps[i] = product;
       }
 
+      // 2. Peak Finding
       const peaks: { freq: number, mag: number }[] = [];
-      // Significant increase in minimum magnitude required
       const minMag = 350 + (this.noiseFloorRMS * 1500); 
-      
-      const startBin = Math.floor(60 / binSize); // Start ~60Hz
 
-      for(let i = startBin; i < hpsLen - 1; i++) {
+      for(let i = minBin; i < loopEnd - 1; i++) {
           if (hps[i] > minMag) {
+              // Local maxima check
               if (hps[i] > hps[i-1] && hps[i] > hps[i+1]) {
                   
                   // Calculate Harmonics FIRST
@@ -209,11 +234,10 @@ export class AudioEngine {
 
                   // Calculate Sharpness (Fundamental)
                   const neighborAvg = (buf[i-1] + buf[i+1]) / 2;
-                  // +1 to avoid div by zero. 
                   const sharpness = buf[i] / (neighborAvg + 1); 
 
                   // Check 2nd Harmonic Sharpness (Piano often has stronger 2nd harmonic)
-                  let isSharp = sharpness > 1.15; // Slightly stricter sharpness
+                  let isSharp = sharpness > 1.15; 
                   if (!isSharp && h2Bin < buf.length - 1) {
                       const h2Neighbors = (buf[h2Bin-1] + buf[h2Bin+1]) / 2;
                       const h2Sharpness = buf[h2Bin] / (h2Neighbors + 1);
@@ -224,16 +248,12 @@ export class AudioEngine {
                   const freq = i * binSize;
                   const isVocalRange = freq > 85 && freq < 300;
 
-                  // --- SPEECH REJECTION LOGIC ---
+                  // Speech Rejection
                   if (isVocalRange) {
-                      // In vocal range, we need EITHER high sharpness OR strong harmonics
-                      // Speech has low sharpness AND usually weak harmonics relative to fundamental
                       if (!isSharp && harmonicScore < 1) {
-                          // Allow if it's extremely loud (overpowering speech)
                           if (hps[i] < minMag * 4) continue;
                       }
                   } else {
-                      // Outside vocal range (e.g. high notes), just check minimal signal quality
                       if (!isSharp && hps[i] < minMag * 1.5) continue; 
                   }
 
@@ -242,12 +262,16 @@ export class AudioEngine {
           }
       }
 
+      // 3. Sort peaks by magnitude (heaviest op left in, but peaks array is usually small)
       peaks.sort((a, b) => b.mag - a.mag);
       
-      // Octave Error Correction
-      const cleanedPeaks = peaks.filter((p, idx) => {
+      // 4. Octave Error Correction
+      // Use for-loop instead of filter to reduce allocations if possible, but filter is cleaner here.
+      // Optimization: Limit to top 6 peaks before filtering
+      const candidates = peaks.slice(0, 6);
+      const cleanedPeaks = candidates.filter((p, idx) => {
           for (let j = 0; j < idx; j++) {
-              const ratio = p.freq / peaks[j].freq;
+              const ratio = p.freq / candidates[j].freq;
               if (Math.abs(ratio - Math.round(ratio)) < 0.05 && Math.round(ratio) > 1) {
                   return false; // Discard harmonic
               }
@@ -255,8 +279,10 @@ export class AudioEngine {
           return true;
       });
 
+      // 5. Convert to Notes
       return cleanedPeaks.slice(0, 4).map(p => {
-          const midiNum = 12 * (Math.log(p.freq / 440) / Math.log(2)) + 69;
+          // Pre-calculated LOG_2 used
+          const midiNum = 12 * (Math.log(p.freq / 440) / this.LOG_2) + 69;
           const roundedMidi = Math.round(midiNum);
           const noteNameIndex = roundedMidi % 12;
           const note = NOTES_ORDER[noteNameIndex];
@@ -270,6 +296,8 @@ export class AudioEngine {
 
   private detectChord(notes: DetectedNote[]): string | undefined {
       if (!notes || notes.length < 2) return undefined;
+      
+      // Optimization: Create lightweight comparison array
       const sorted = [...notes].sort((a, b) => a.frequency - b.frequency);
       const root = sorted[0];
       const intervals = sorted.slice(1).map(n => Math.round(12 * Math.log2(n.frequency / root.frequency)));
@@ -288,7 +316,9 @@ export class AudioEngine {
   }
 
   analyze(): AudioAnalysisResult {
-    // MIDI Priority
+    const now = Date.now();
+
+    // MIDI Priority (Very fast)
     if (this.activeMidiNotes.size > 0) {
         const detected: DetectedNote[] = [];
         this.activeMidiNotes.forEach((vel, midiNum) => {
@@ -301,9 +331,16 @@ export class AudioEngine {
                 midi: midiNum
             });
         });
+        
+        // Throttled Chord Detection for MIDI
+        if (now - this.lastChordCheckTime > 100) {
+            this.cachedChordName = this.detectChord(detected);
+            this.lastChordCheckTime = now;
+        }
+
         return { 
             activeNotes: detected, volume: 0.8, snr: 100, clarity: 1, harmonicity: 1, spectralCentroid: 1000, source: 'midi',
-            chordName: this.detectChord(detected)
+            chordName: this.cachedChordName
         };
     }
 
@@ -314,23 +351,26 @@ export class AudioEngine {
     this.analyser.getFloatTimeDomainData(this.buffer);
     this.analyser.getByteFrequencyData(this.frequencyBuffer);
 
-    // Visual Spectrum
-    const spectrum = new Array(64).fill(0);
+    // Visual Spectrum - Optimized loop
+    // Reusing spectrumBuffer to avoid allocation
     const step = Math.floor(this.frequencyBuffer.length / 2 / 64); 
     for (let i = 0; i < 64; i++) {
         let sum = 0;
+        // Small inner loop ok, raw array access
         for (let j = 0; j < step; j++) {
             sum += this.frequencyBuffer[i * step + j];
         }
-        spectrum[i] = sum / step / 255;
+        this.spectrumBuffer[i] = sum / step / 255;
     }
 
     // RMS Calculation
     let rms = 0;
-    for (let i = 0; i < this.buffer.length; i++) {
-        rms += this.buffer[i] * this.buffer[i];
+    const len = this.buffer.length;
+    for (let i = 0; i < len; i++) {
+        const val = this.buffer[i];
+        rms += val * val;
     }
-    rms = Math.sqrt(rms / this.buffer.length);
+    rms = Math.sqrt(rms / len);
 
     // Adaptive Noise Floor
     if (rms < this.noiseFloorRMS) {
@@ -342,23 +382,25 @@ export class AudioEngine {
 
     const snr = 20 * Math.log10(rms / this.noiseFloorRMS);
     
-    // Silence Gate - Increased Strictness (2.5x noise floor)
+    // Silence Gate
     if (rms < this.noiseFloorRMS * 2.5) {
         this.noteHistory.clear();
-        return { activeNotes: [], volume: rms, snr, clarity: 0, harmonicity: 0, spectralCentroid: 0, source: 'mic', spectrum };
+        return { activeNotes: [], volume: rms, snr, clarity: 0, harmonicity: 0, spectralCentroid: 0, source: 'mic', spectrum: this.spectrumBuffer };
     }
 
+    // --- HEAVY PROCESSING START ---
     const rawActiveNotes = this.detectPolyphonic(this.frequencyBuffer, this.audioContext?.sampleRate || 44100);
 
-    // --- TEMPORAL STABILITY ---
+    // Temporal Stability
     const currentFrameMidis = new Set<number>();
     
-    rawActiveNotes.forEach(note => {
+    // Use for...of to iterate (cleaner than forEach with anonymous function)
+    for (const note of rawActiveNotes) {
         const midi = note.midi;
         const count = this.noteHistory.get(midi) || 0;
         this.noteHistory.set(midi, Math.min(count + 1, 10)); 
         currentFrameMidis.add(midi);
-    });
+    }
 
     // Decay
     for (const [midi, count] of this.noteHistory.entries()) {
@@ -372,13 +414,17 @@ export class AudioEngine {
         }
     }
 
-    // Filter by consistency
     const stableNotes = rawActiveNotes.filter(n => {
         const count = this.noteHistory.get(n.midi) || 0;
         return count >= this.FRAMES_TO_CONFIRM;
     });
 
-    // Dummy stats for UI
+    // Throttled Chord Detection (Mic) - Run every ~100ms
+    if (now - this.lastChordCheckTime > 100) {
+        this.cachedChordName = this.detectChord(stableNotes);
+        this.lastChordCheckTime = now;
+    }
+
     const clarity = stableNotes.length > 0 ? stableNotes[0].confidence : 0;
     
     return { 
@@ -386,16 +432,33 @@ export class AudioEngine {
         volume: rms, 
         snr, 
         clarity, 
-        harmonicity: 0.8, // placeholder
-        spectralCentroid: 1000, // placeholder
+        harmonicity: 0.8, 
+        spectralCentroid: 1000, 
         source: 'mic',
-        chordName: this.detectChord(stableNotes),
-        spectrum
+        chordName: this.cachedChordName,
+        spectrum: this.spectrumBuffer // Passing reference is safe if we don't mutate it in UI
     };
   }
 
   // --- AUDIO PLAYBACK ---
+  
+  ensureAudioContext() {
+      if (!this.audioContext) {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          this.audioContext = new AudioContextClass();
+      }
+      if (this.audioContext.state === 'suspended') {
+          this.audioContext.resume();
+      }
+      if (!this.mainGain && this.audioContext) {
+          this.mainGain = this.audioContext.createGain();
+          this.mainGain.gain.value = 0.3;
+          this.mainGain.connect(this.audioContext.destination);
+      }
+  }
+
   playTone(frequency: number, duration: number, type: OscillatorType = 'sine', time: number = 0) {
+    this.ensureAudioContext();
     if (!this.audioContext || !this.mainGain) return;
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
@@ -409,6 +472,40 @@ export class AudioEngine {
     gain.connect(this.mainGain);
     osc.start(t);
     osc.stop(t + duration + 0.1);
+  }
+
+  // Improved piano synthesized sound
+  playPianoNote(frequency: number) {
+      if (!this.synthesizedPianoEnabled) return; // Only play if enabled
+      this.ensureAudioContext();
+      if (!this.audioContext || !this.mainGain) return;
+
+      const t = this.audioContext.currentTime;
+      
+      const osc = this.audioContext.createOscillator();
+      const gain = this.audioContext.createGain();
+      const filter = this.audioContext.createBiquadFilter();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(frequency, t);
+
+      // Filter Envelope (Makes it sound more like a struck string)
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(200, t);
+      filter.frequency.exponentialRampToValueAtTime(4000, t + 0.02); // Attack
+      filter.frequency.exponentialRampToValueAtTime(500, t + 0.5); // Decay
+
+      // Amplitude Envelope
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.5, t + 0.02); // Hard attack
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.5); // Long release
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.mainGain);
+
+      osc.start(t);
+      osc.stop(t + 1.5);
   }
 
   playBackingTrackChord(notes: string[], duration: number) {
@@ -452,9 +549,9 @@ export class AudioEngine {
   stop() {
     this.isListening = false;
     
-    // Explicitly stop media tracks to release microphone hardware and remove "recording" indicator
     if (this.mediaStreamSource) {
-        this.mediaStreamSource.mediaStream.getTracks().forEach(t => t.stop());
+        // Fix: Access mediaStream to stop tracks
+        this.mediaStreamSource.mediaStream.getTracks().forEach(t => t.stop()); 
         this.mediaStreamSource.disconnect();
         this.mediaStreamSource = null;
     }
@@ -463,7 +560,6 @@ export class AudioEngine {
         if (this.audioContext.state !== 'closed') {
              this.audioContext.close();
         }
-        // Force re-initialization on next start
         this.audioContext = null; 
     }
     

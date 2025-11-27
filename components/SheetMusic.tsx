@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { NoteEvent, AudioAnalysisResult, NoteName, NoteStatus, LoopRegion, AppSettings } from '../types';
 
@@ -28,6 +27,42 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
   const ZOOM_FACTOR = (settings?.sheetMusicZoom || 100) / 100;
   const BEATS_TO_PIXELS = 100 * ZOOM_FACTOR;
   const PLAY_HEAD_X = 150;
+
+  // Helper to fetch variable and wrap in rgb() since our vars are just numbers
+  const getThemeColor = (varName: string, alpha: number = 1) => {
+    if (typeof window !== 'undefined') {
+      const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      if (val) {
+        // Fix: CSS vars are space-separated (e.g. "10 132 255") for Tailwind compatibility.
+        // Canvas 'rgba' requires comma-separated (e.g. "10, 132, 255").
+        const parts = val.split(/\s+/);
+        if (parts.length >= 3) {
+            return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
+        }
+        // Fallback if parsing fails (unlikely given correct setup)
+        return `rgba(${val}, ${alpha})`;
+      }
+    }
+    return `rgba(255, 255, 255, ${alpha})`; // Fallback
+  };
+  
+  // Dynamically set colors based on CSS variables
+  const COLORS = {
+      staffLines: getThemeColor('--color-border-default', 0.5),
+      barLines: getThemeColor('--color-border-default', 0.3),
+      text: getThemeColor('--color-text-primary', 0.9),
+      playHead: getThemeColor('--color-brand-primary', 0.8),
+      measureNumber: getThemeColor('--color-text-secondary', 0.6),
+      ledgerLines: getThemeColor('--color-text-secondary', 0.5),
+      noteDefault: getThemeColor('--color-text-primary', 1.0),
+      lyricText: getThemeColor('--color-text-primary', 0.95),
+      hintText: getThemeColor('--color-brand-primary', 0.9),
+      
+      // Note Status Colors
+      noteCorrect: getThemeColor('--color-accent-success', 1.0),
+      noteHint: getThemeColor('--color-accent-warning', 1.0),
+      noteMissed: getThemeColor('--color-accent-error', 1.0),
+  };
 
   const getStaffY = (note: NoteName, octave: number, centerY: number) => {
     const cMajorOffsets: Record<string, number> = {
@@ -74,7 +109,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       const startMeasure = Math.floor((currentTime - (PLAY_HEAD_X / BEATS_TO_PIXELS)) / beatsPerMeasure);
       const endMeasure = Math.floor((currentTime + (width / BEATS_TO_PIXELS)) / beatsPerMeasure);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.strokeStyle = COLORS.barLines;
       ctx.lineWidth = 1;
 
       for (let m = startMeasure; m <= endMeasure; m++) {
@@ -87,7 +122,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
               ctx.lineTo(x, centerY + 100);
               ctx.stroke();
               
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+              ctx.fillStyle = COLORS.measureNumber;
               ctx.font = '10px Inter, sans-serif';
               ctx.fillText((m + 1).toString(), x + 5, centerY - 105);
           }
@@ -97,7 +132,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       const bassY = centerY + 50;
 
       const drawStaff = (baseY: number) => {
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.strokeStyle = COLORS.staffLines;
           ctx.lineWidth = 1;
           for (let i = -2; i <= 2; i++) {
             const y = baseY + (i * STAFF_LINE_SPACING);
@@ -112,7 +147,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       drawStaff(bassY);
       
       // Draw Clefs with correct font stack to ensure symbols render
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.fillStyle = COLORS.text;
       ctx.font = 'normal 50px "Times New Roman", serif'; 
       ctx.fillText('𝄞', 15, trebleY + 15);
       ctx.fillText('𝄢', 15, bassY + 12);
@@ -124,19 +159,20 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
          
          if (loopStartX < width && loopStartX + loopWidth > 0) {
              const grd = ctx.createLinearGradient(loopStartX, 0, loopStartX, height);
-             grd.addColorStop(0, 'rgba(96, 165, 250, 0.05)');
-             grd.addColorStop(0.5, 'rgba(96, 165, 250, 0.15)');
-             grd.addColorStop(1, 'rgba(96, 165, 250, 0.05)');
+             // iOS Blue #007AFF
+             grd.addColorStop(0, 'rgba(0, 122, 255, 0.05)');
+             grd.addColorStop(0.5, 'rgba(0, 122, 255, 0.15)');
+             grd.addColorStop(1, 'rgba(0, 122, 255, 0.05)');
              
              ctx.fillStyle = grd;
              ctx.fillRect(loopStartX, 0, loopWidth, height);
              
-             ctx.strokeStyle = '#60a5fa';
+             ctx.strokeStyle = '#007AFF';
              ctx.lineWidth = 2;
              ctx.beginPath(); ctx.moveTo(loopStartX + 10, 20); ctx.lineTo(loopStartX, 20); ctx.lineTo(loopStartX, height - 20); ctx.lineTo(loopStartX + 10, height - 20); ctx.stroke();
              ctx.beginPath(); ctx.moveTo(loopStartX + loopWidth - 10, 20); ctx.lineTo(loopStartX + loopWidth, 20); ctx.lineTo(loopStartX + loopWidth, height - 20); ctx.lineTo(loopStartX + loopWidth - 10, height - 20); ctx.stroke();
 
-             ctx.fillStyle = '#60a5fa';
+             ctx.fillStyle = '#007AFF';
              ctx.font = 'bold 10px Inter, sans-serif';
              ctx.fillText('LOOP', loopStartX + 5, 35);
          }
@@ -168,21 +204,21 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
 
             const status = results.get(index) || NoteStatus.PENDING;
             
-            let fillStyle = 'white';
+            let fillStyle = COLORS.noteDefault;
             let shadowColor = 'transparent';
             let shadowBlur = 0;
 
             if (status === NoteStatus.CORRECT) {
-                fillStyle = '#4ade80'; 
-                shadowColor = '#4ade80';
+                fillStyle = COLORS.noteCorrect;
+                shadowColor = COLORS.noteCorrect;
                 shadowBlur = 15;
             } else if (status === NoteStatus.HINTED) {
-                fillStyle = '#facc15'; 
-                shadowColor = '#facc15';
+                fillStyle = COLORS.noteHint;
+                shadowColor = COLORS.noteHint;
                 shadowBlur = 20;
             } else if (status === NoteStatus.MISSED) {
-                fillStyle = '#ef4444'; 
-                shadowColor = '#ef4444';
+                fillStyle = COLORS.noteMissed;
+                shadowColor = COLORS.noteMissed;
                 shadowBlur = 10;
             }
 
@@ -193,12 +229,12 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
             if (y <= staffTop - STAFF_LINE_SPACING) {
                 for (let ly = staffTop - STAFF_LINE_SPACING; ly >= y - 5; ly -= STAFF_LINE_SPACING) {
                     ctx.beginPath(); ctx.moveTo(x - 12, ly); ctx.lineTo(x + 12, ly);
-                    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.strokeStyle = COLORS.ledgerLines; ctx.lineWidth = 1; ctx.stroke();
                 }
             } else if (y >= staffBottom + STAFF_LINE_SPACING) {
                 for (let ly = staffBottom + STAFF_LINE_SPACING; ly <= y + 5; ly += STAFF_LINE_SPACING) {
                     ctx.beginPath(); ctx.moveTo(x - 12, ly); ctx.lineTo(x + 12, ly);
-                    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.strokeStyle = COLORS.ledgerLines; ctx.lineWidth = 1; ctx.stroke();
                 }
             }
 
@@ -231,7 +267,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
 
             // --- FINGER NUMBERING ---
             if (noteEvent.finger) {
-                ctx.fillStyle = status === NoteStatus.CORRECT ? '#4ade80' : 'rgba(255, 255, 255, 0.7)';
+                ctx.fillStyle = status === NoteStatus.CORRECT ? COLORS.noteCorrect : COLORS.hintText;
                 ctx.font = 'bold 11px Inter, sans-serif';
                 ctx.textAlign = 'center';
                 const fingerY = isLeftHand ? y + 22 : y - 22;
@@ -242,7 +278,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
             
             // --- INSTRUCTIONAL TEXT (LYRICS - BELOW) ---
             if (noteEvent.lyrics) {
-                ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                ctx.fillStyle = COLORS.lyricText;
                 ctx.font = 'bold 14px Inter, sans-serif';
                 // Standardize lyric position well below the staff area
                 const lyricY = targetStaffY === trebleY ? trebleY + 100 : bassY + 100; 
@@ -250,12 +286,9 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
             }
 
             // --- NOTE LETTER HINT (ABOVE) ---
-            // Schaum style: Letter hint above, lyrics below.
-            // We show this if settings allow OR if lyrics are present (implying "Instructional/Book" mode)
             if (settings?.showNoteLabels || noteEvent.lyrics) {
-                ctx.fillStyle = 'rgba(100, 200, 255, 0.9)'; 
+                ctx.fillStyle = COLORS.hintText; 
                 ctx.font = 'bold 12px monospace';
-                // Position hint above note (or below if note is high up, simple logic for now: always above)
                 const hintY = y - 30;
                 ctx.fillText(noteEvent.note, x, hintY);
             }
@@ -268,8 +301,11 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       ctx.lineTo(PLAY_HEAD_X, height);
       
       const grad = ctx.createLinearGradient(0, 0, 0, height);
+      const playHeadPrimaryColor = COLORS.playHead;
+      
+      // Use the playHead color. Since getThemeColor now returns valid rgba string, this works fine.
       grad.addColorStop(0, 'rgba(255,255,255,0)');
-      grad.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+      grad.addColorStop(0.5, playHeadPrimaryColor);
       grad.addColorStop(1, 'rgba(255,255,255,0)');
       
       ctx.strokeStyle = grad;
@@ -277,9 +313,9 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
       ctx.stroke();
 
       // Playhead Glow
-      ctx.shadowColor = 'white';
+      ctx.shadowColor = playHeadPrimaryColor;
       ctx.shadowBlur = 10;
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = playHeadPrimaryColor;
       ctx.beginPath();
       ctx.arc(PLAY_HEAD_X, centerY, 3, 0, Math.PI * 2);
       ctx.fill();
@@ -293,7 +329,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
   }, [songNotes, currentTime, currentInput, results, loopRegion, settings]);
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-surface-secondary/40 backdrop-blur-lg border-b border-white/10">
+    <div className="w-full h-full relative overflow-hidden bg-surface-secondary/40 backdrop-blur-lg border-b border-white/10 dark:border-border-default">
        <div className="absolute inset-0 bg-gradient-to-r from-surface-primary via-transparent to-surface-primary z-10 pointer-events-none" />
        <canvas ref={canvasRef} className="w-full h-full block" />
     </div>

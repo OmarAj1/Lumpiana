@@ -1,5 +1,4 @@
 
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppState, User, AppSettings, Song, OnboardingStep, Instrument, AuthView } from '../types';
 import { storageService } from '../services/storageService';
@@ -71,11 +70,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     storageService.saveSettings(settings);
     
-    // Theme
+    // Theme: settings.darkMode = true means user wants dark. So html should NOT have the 'dark' class.
+    // settings.darkMode = false means user wants light. So html SHOULD have the 'dark' class.
     if (settings.darkMode) {
-        document.documentElement.classList.add('dark');
-    } else {
         document.documentElement.classList.remove('dark');
+    } else {
+        document.documentElement.classList.add('dark');
     }
 
     // Audio Engine Sync
@@ -86,6 +86,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
        audioEngine.setEnabled(false);
     }
+    // New: Sync the synthesized piano sound state
+    audioEngine.setSynthesizedPianoEnabled(!settings.enableTouchPiano);
 
   }, [settings]);
 

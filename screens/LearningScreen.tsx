@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   motion, 
@@ -17,7 +16,8 @@ import {
 } from '../components/Icons'; 
 import { User, Song, SchaumBook, SongStats } from '../types';
 import { COURSES, SCHAUM_BOOKS, SchaumBookData } from '../constants';
-import { LevelLayout } from '../components/LevelLayout';
+import { LevelLayout, LevelLayoutProps } from '../components/LevelLayout'; // Import LevelLayoutProps
+import TiltCard from '../components/TiltCard'; // Import TiltCard
 
 // ==========================================
 // 1. HELPERS
@@ -42,7 +42,7 @@ const calculateBookProgress = (bookId: string, userProgress: Record<string, Song
 const AtmosphericBackground = React.memo(({ activeBook }: { activeBook: SchaumBookData }) => {
     return (
         <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-            <div className="absolute inset-0 bg-surface-primary dark:bg-zinc-50 transition-colors duration-1000 ease-in-out" />
+            <div className="absolute inset-0 bg-surface-primary transition-colors duration-1000 ease-in-out" />
             
             {/* Primary Blob */}
             <motion.div 
@@ -106,128 +106,19 @@ const ParticleSystem = React.memo(({ particles }: { particles: string[] }) => {
     );
 });
 
-interface TiltCardProps {
-    book: SchaumBookData;
-    isActive: boolean;
-    progress: number;
-    onClick: () => void;
-}
-
-const TiltCard = ({ book, isActive, progress, onClick }: TiltCardProps) => {
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-    const scale = useMotionValue(1);
-
-    const mouseX = useSpring(x, { stiffness: 300, damping: 30 });
-    const mouseY = useSpring(y, { stiffness: 300, damping: 30 });
-    const scaleSpring = useSpring(scale, { stiffness: 300, damping: 25 });
-
-    const rotateX = useTransform(mouseY, [-0.5, 0.5], [12, -12]);
-    const rotateY = useTransform(mouseX, [-0.5, 0.5], [-12, 12]);
-    
-    const sheenX = useTransform(mouseX, [-0.5, 0.5], [0, 100]);
-    const sheenY = useTransform(mouseY, [-0.5, 0.5], [0, 100]);
-    const sheenOpacity = useTransform(scaleSpring, [1, 1.05], [0, 0.6]);
-    const contentZ = useTransform(scaleSpring, [1, 1.05], [0, 30]);
-
-    useEffect(() => {
-        if (!isActive) {
-            mouseX.jump(0);
-            mouseY.jump(0);
-            scaleSpring.jump(1);
-        }
-    }, [isActive, mouseX, mouseY, scaleSpring]);
-
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isActive) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        x.set((e.clientX - rect.left) / rect.width - 0.5);
-        y.set((e.clientY - rect.top) / rect.height - 0.5);
-    };
-
-    return (
-        <div 
-            className="relative w-full h-full cursor-pointer touch-none"
-            onMouseMove={isActive ? handleMouseMove : undefined}
-            onMouseEnter={() => isActive && scale.set(1.05)}
-            onMouseLeave={() => { x.set(0); y.set(0); scale.set(1); }}
-            onClick={onClick}
-            style={{ perspective: 1200 }} 
-        >
-            <div className="absolute inset-0 z-0 pointer-events-auto" />
-            <motion.div 
-                layoutId={isActive ? `card-container-${book.id}` : undefined}
-                layout={false}
-                transformTemplate={(_, generated) => generated}
-                className="w-full h-full rounded-[2.5rem] relative preserve-3d border border-white/10 dark:border-white/50 bg-surface-secondary overflow-hidden pointer-events-none"
-                style={{ 
-                    rotateX: isActive ? rotateX : 0, 
-                    rotateY: isActive ? rotateY : 0,
-                    scale: isActive ? scaleSpring : 1, 
-                    background: book.gradient,
-                    boxShadow: isActive ? `0 25px 50px -12px ${book.shadow}` : `0 10px 30px -10px rgba(0,0,0,0.3)`,
-                    transformStyle: "preserve-3d",
-                    willChange: "transform"
-                }}
-            >
-                <motion.div 
-                    className="absolute inset-0 z-30 pointer-events-none mix-blend-overlay"
-                    style={{
-                        background: `radial-gradient(circle at ${sheenX}% ${sheenY}%, rgba(255,255,255,0.5) 0%, transparent 50%)`,
-                        opacity: isActive ? sheenOpacity : 0 
-                    }}
-                />
-                <motion.div 
-                    className="relative z-20 flex flex-col h-full p-8 justify-between text-white"
-                    style={{ z: contentZ, transformStyle: "preserve-3d" }}
-                >
-                    <div className="flex justify-between items-start">
-                        <motion.div 
-                            layoutId={isActive ? `book-icon-${book.id}` : undefined}
-                            className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-[inset_0_0_20px_rgba(255,255,255,0.2)] border border-white/20"
-                        >
-                            {book.icon}
-                        </motion.div>
-                        <div className="px-3 py-1.5 bg-black/30 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest border border-white/10 shadow-lg flex items-center gap-1">
-                            {isActive ? <span className="animate-pulse text-green-400">●</span> : null}
-                            {book.difficultyLabel}
-                        </div>
-                    </div>
-                    <div className="space-y-2 mt-4">
-                        <motion.h2 layoutId={isActive ? `book-title-${book.id}` : undefined} className="text-4xl md:text-5xl font-black tracking-tighter drop-shadow-xl">{book.title}</motion.h2>
-                        <motion.p layoutId={isActive ? `book-subtitle-${book.id}` : undefined} className="text-lg font-medium text-white/90 tracking-tight">{book.subtitle}</motion.p>
-                    </div>
-                    <div className="space-y-3 mt-auto">
-                        <div className="flex justify-between items-end text-xs font-bold uppercase tracking-wider text-white/90">
-                            <span className="flex items-center gap-1">{progress === 100 ? <CheckIcon /> : <LightningIcon />}{progress === 100 ? 'Mastered' : 'Progress'}</span>
-                            <span>{progress}%</span>
-                        </div>
-                        <div className="h-2.5 w-full bg-black/20 rounded-full overflow-hidden backdrop-blur-md border border-white/5">
-                            <motion.div 
-                                className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.8)]"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progress}%` }}
-                                transition={{ duration: 1.2, ease: "circOut", delay: 0.2 }}
-                            />
-                        </div>
-                        <motion.div className="h-8 overflow-hidden" animate={{ opacity: isActive ? 1 : 0.5 }}>
-                            <p className="text-xs text-white/70 font-medium leading-relaxed truncate">{book.desc}</p>
-                        </motion.div>
-                    </div>
-                </motion.div>
-                <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
-            </motion.div>
-        </div>
-    );
-};
 
 // ==========================================
 // 3. INDIVIDUAL LEVEL SCREENS
 // ==========================================
-// This structure allows for easy customization of specific levels in the future.
 
-const LevelPreAScreen = (props: any) => (
-    <LevelLayout {...props}>
+// Fix: Explicitly type props for LevelLayout wrapper components
+interface LevelLayoutWrapperProps extends LevelLayoutProps {
+    // No additional props specific to the wrapper needed if it only adds a hardcoded className
+}
+
+// Fix: Destructure className from props to avoid passing it twice via spread, then merge
+const LevelPreAScreen = (props: LevelLayoutWrapperProps) => (
+    <LevelLayout {...props} className={`${props.className || ''} level-pre-a`}>
         {/* Example: Custom banner for beginners */}
         <div className="mb-8 p-4 bg-green-500/10 border border-green-500/30 rounded-2xl">
              <h4 className="font-bold text-green-400 text-sm mb-1">🌱 Start Here</h4>
@@ -236,11 +127,11 @@ const LevelPreAScreen = (props: any) => (
     </LevelLayout>
 );
 
-const LevelGrade1Screen = (props: any) => <LevelLayout {...props} />;
-const LevelGrade1HalfScreen = (props: any) => <LevelLayout {...props} />;
-const LevelGrade2Screen = (props: any) => <LevelLayout {...props} />;
-const LevelGrade2HalfScreen = (props: any) => <LevelLayout {...props} />;
-const LevelVirtuosoScreen = (props: any) => <LevelLayout {...props} />;
+const LevelGrade1Screen = (props: LevelLayoutWrapperProps) => <LevelLayout {...props} className={`${props.className || ''} level-grade-1`} />;
+const LevelGrade1HalfScreen = (props: LevelLayoutWrapperProps) => <LevelLayout {...props} className={`${props.className || ''} level-grade-1-half`} />;
+const LevelGrade2Screen = (props: LevelLayoutWrapperProps) => <LevelLayout {...props} className={`${props.className || ''} level-grade-2`} />;
+const LevelGrade2HalfScreen = (props: LevelLayoutWrapperProps) => <LevelLayout {...props} className={`${props.className || ''} level-grade-2-half`} />;
+const LevelVirtuosoScreen = (props: LevelLayoutWrapperProps) => <LevelLayout {...props} className={`${props.className || ''} level-virtuoso`} />;
 
 // ==========================================
 // 4. MAIN LEARNING ROUTER
@@ -304,8 +195,7 @@ export const LearningScreen: React.FC<LearningScreenProps> = ({ currentUser, sta
     const renderDetailView = () => {
         if (!selectedBook) return null;
         
-        const commonProps = {
-            key: "detail-view",
+        const commonProps: LevelLayoutWrapperProps = { // Fix: Pass LevelLayoutWrapperProps instead of LevelLayoutProps
             book: selectedBook,
             currentUser,
             startSong,
@@ -337,18 +227,19 @@ export const LearningScreen: React.FC<LearningScreenProps> = ({ currentUser, sta
                         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.3 } }}
                     >
                         <div className="text-center mb-4 md:mb-8 z-20 px-6">
-                            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm mb-4">
+                            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 dark:border-border-default backdrop-blur-sm mb-4">
                                 <HeadphonesIcon />
-                                <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">Course Library</span>
+                                <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">Course Library</span>
                             </motion.div>
-                            <motion.h1 initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-black text-white dark:text-gray-900 mb-2 tracking-tight">
+                            {/* REDUCED TITLE SIZE HERE */}
+                            <motion.h1 initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="text-2xl md:text-4xl font-black text-text-primary mb-2 tracking-tight">
                                 Learning Path
                             </motion.h1>
                         </div>
 
                         <div className="relative w-full max-w-[1400px] h-[450px] md:h-[600px] flex items-center justify-center perspective-[2000px] touch-pan-y">
-                            <button onClick={handlePrev} className="hidden md:flex absolute left-8 z-50 w-14 h-14 rounded-full bg-surface-secondary/80 hover:bg-white/10 border border-white/10 backdrop-blur-md items-center justify-center text-white transition-all hover:scale-110 active:scale-95"><ChevronLeftIcon /></button>
-                            <button onClick={handleNext} className="hidden md:flex absolute right-8 z-50 w-14 h-14 rounded-full bg-surface-secondary/80 hover:bg-white/10 border border-white/10 backdrop-blur-md items-center justify-center text-white transition-all hover:scale-110 active:scale-95"><ChevronRightIcon /></button>
+                            <button onClick={handlePrev} className="hidden md:flex absolute left-8 z-50 w-14 h-14 rounded-full bg-surface-secondary/80 hover:bg-white/10 dark:hover:bg-surface-tertiary border border-white/10 dark:border-border-default backdrop-blur-md items-center justify-center text-text-primary transition-all hover:scale-110 active:scale-95"><ChevronLeftIcon /></button>
+                            <button onClick={handleNext} className="hidden md:flex absolute right-8 z-50 w-14 h-14 rounded-full bg-surface-secondary/80 hover:bg-white/10 dark:hover:bg-surface-tertiary border border-white/10 dark:border-border-default backdrop-blur-md items-center justify-center text-text-primary transition-all hover:scale-110 active:scale-95"><ChevronRightIcon /></button>
 
                             {SCHAUM_BOOKS.map((book, index) => {
                                 let offset = index - activeIndex;
@@ -383,28 +274,28 @@ export const LearningScreen: React.FC<LearningScreenProps> = ({ currentUser, sta
                                     >
                                         <TiltCard 
                                             book={book} 
-                                            isActive={isActive} 
+                                            isActive={isActive}
                                             progress={progressMap[book.id]}
-                                            onClick={() => {
-                                                if (isActive) handleSelectBook();
-                                                else if (offset > 0) handleNext();
-                                                else handlePrev();
-                                            }}
+                                            onClick={handleSelectBook}
                                         />
                                     </motion.div>
                                 );
                             })}
                         </div>
-                        <div className="flex gap-4 mt-8 md:mt-12">
-                            {SCHAUM_BOOKS.map((b, i) => (
-                                <button key={b.id} onClick={() => setActiveIndex(i)} className={`h-1.5 rounded-full transition-all duration-500 ease-out ${i === activeIndex ? 'w-12 opacity-100' : 'w-2 opacity-30 hover:opacity-60 bg-gray-400'}`} style={{ backgroundColor: i === activeIndex ? b.accentColor : undefined }} />
-                            ))}
-                        </div>
                     </motion.div>
                 )}
 
-                {/* === DETAIL VIEW ROUTER === */}
-                {viewMode === 'detail' && renderDetailView()}
+                {viewMode === 'detail' && (
+                    <motion.div 
+                        key="detail-container"
+                        className="absolute inset-0 z-50"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        {renderDetailView()}
+                    </motion.div>
+                )}
             </AnimatePresence>
         </div>
     );

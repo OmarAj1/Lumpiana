@@ -1,0 +1,78 @@
+/* 
+  Colors defined as RGB triplets (R G B) to allow Tailwind to handle opacity.
+  Example: var(--color-surface-primary) -> 0 0 0
+  Tailwind usage: rgb(var(--color-surface-primary) / <alpha>)
+*/
+
+:root {
+  /* --- DARK MODE (Default) --- */
+  
+  /* Surface */
+  --color-surface-primary: 0 0 0;          /* Pure Black (considered harsh) */
+  --color-surface-secondary: 30 30 32;     /* Dark Gray (slightly warmer) */
+  --color-surface-tertiary: 50 50 52;      /* Lighter Gray (warmer tone for depth) */
+  --color-surface-glass: 30 30 32;         /* Slightly lighter for glass effect */
+  --color-surface-interactive: 58 58 60;   /* Interactive elements */
+
+  /* Text */
+  --color-text-primary: 255 255 255;       /* White (remains unchanged) */
+  --color-text-secondary: 150 150 155;     /* iOS Gray (lightened a bit for contrast) */
+
+  /* Border */
+  --color-border-default: 56 56 58;        /* Dark Border (remains unchanged) */
+  --color-border-glass-light: 255 255 255; /* White (used with low opacity) */
+
+  /* Specific Key Colors */
+  --color-key-white-border: 212 212 216;   
+  --color-key-black-idle: 31 33 36;
+
+  /* Brand */
+  --color-brand-primary: 10 132 255;       /* iOS Blue (Dark Mode) */
+  --color-brand-secondary: 94 92 230;      /* iOS Indigo (Dark Mode, can adjust slightly for warmth) */
+
+  /* Accent */
+  --color-accent-blue: 10 132 255;
+  --color-accent-success: 48 209 88;       /* iOS Green (Dark Mode) */
+  --color-accent-warning: 255 159 10;      /* iOS Orange (Dark Mode, consider a deeper amber) */
+  --color-accent-error: 255 69 58;         /* iOS Red (Dark Mode) */
+  
+  /* Generic body styles */
+  --color-base-body-bg: 0 0 0;
+  --color-base-body-text: 255 255 255;
+}
+
+/* --- LIGHT MODE Overrides --- */
+/* Activated when 'dark' class is present on html (logic inverted in code) */
+html.dark {
+  /* Surface */
+  --color-surface-primary: 242 242 247;    /* iOS System Grouped Background */
+  --color-surface-secondary: 255 255 255;  /* Pure White Cards */
+  --color-surface-tertiary: 229 229 234;   /* iOS System Gray 5 */
+  --color-surface-glass: 255 255 255;
+  --color-surface-interactive: 209 209 214;
+
+  /* Text */
+  --color-text-primary: 0 0 0;             /* Black */
+  --color-text-secondary: 140 140 145;     /* iOS Gray (darker than dark mode's secondary for better contrast) */
+
+  /* Border */
+  --color-border-default: 198 198 200;     /* Light Border (remains unchanged) */
+  --color-border-glass-light: 0 0 0;       /* Black (used with low opacity) */
+
+  /* Specific Key Colors */
+  --color-key-white-border: 212 212 216;
+  --color-key-black-idle: 28 28 30;
+
+  /* Brand */
+  --color-brand-primary: 0 122 255;        /* iOS Blue (Light Mode) */
+  --color-brand-secondary: 88 86 214;      /* iOS Indigo (Light Mode, slight change for warmth) */
+
+  /* Accent */
+  --color-accent-blue: 0 122 255;
+  --color-accent-success: 52 199 89;       /* iOS Green (Light Mode) */
+  --color-accent-warning: 255 149 0;       /* iOS Orange (Light Mode, consider a deeper amber) */
+  --color-accent-error: 255 59 48;         /* iOS Red (Light Mode) */
+  
+  --color-base-body-bg: 242 242 247;
+  --color-base-body-text: 0 0 0;
+}

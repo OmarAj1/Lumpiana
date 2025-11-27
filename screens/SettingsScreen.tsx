@@ -77,21 +77,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
     };
 
   return (
-     <div className="h-screen bg-surface-primary dark:bg-dark-surface-primary text-text-primary dark:text-dark-text-primary overflow-y-auto p-8">
+     <div className="h-screen bg-surface-primary text-text-primary overflow-y-auto p-8">
         <div className="max-w-2xl mx-auto space-y-8">
              <div className="flex items-center gap-4 mb-8">
-                <button onClick={() => setAppState(AppState.MENU)} className="p-2 rounded-full hover:bg-white/10">← Back</button>
+                <button onClick={() => setAppState(AppState.MENU)} className="p-2 rounded-full hover:bg-white/10 dark:hover:bg-surface-tertiary">← Back</button>
                 <h2 className="text-3xl font-bold flex items-center gap-2"><CogIcon /> Admin Settings</h2>
              </div>
 
              {/* Gameplay Settings */}
              <section className="space-y-6">
-                <h3 className="text-xl font-bold text-blue-400 border-b border-white/10 pb-2">Gameplay</h3>
+                <h3 className="text-xl font-bold text-blue-400 border-b border-white/10 dark:border-border-default pb-2">Gameplay</h3>
                 
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between p-4 bg-white/5 dark:bg-surface-secondary rounded-xl border border-white/10 dark:border-border-default">
                     <div>
-                        <p className="font-bold text-white">Flow Mode (No Waiting)</p>
-                        <p className="text-xs text-gray-500">If on, song continues even if you miss a note.</p>
+                        <p className="font-bold text-text-primary">Flow Mode (No Waiting)</p>
+                        <p className="text-xs text-text-secondary">If on, song continues even if you miss a note.</p>
                     </div>
                     <input 
                         type="checkbox" 
@@ -101,9 +101,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                     />
                 </div>
 
+                <div className="flex items-center justify-between p-4 bg-white/5 dark:bg-surface-secondary rounded-xl border border-white/10 dark:border-border-default">
+                    <div>
+                        <p className="font-bold text-text-primary">Enable Touch Piano</p>
+                        <p className="text-xs text-text-secondary">Click or tap keys to play (Virtual Piano mode).</p>
+                    </div>
+                    <input 
+                        type="checkbox" 
+                        checked={settings.enableTouchPiano}
+                        onChange={(e) => setSettings(s => ({ ...s, enableTouchPiano: e.target.checked }))}
+                        className="w-6 h-6 accent-blue-500"
+                    />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-400 mb-2">Playback Speed ({settings.defaultSpeed}x)</label>
+                        <label className="block text-sm font-bold text-text-secondary mb-2">Playback Speed ({settings.defaultSpeed}x)</label>
                         <input 
                           type="range" min="0.5" max="1.5" step="0.1" 
                           value={settings.defaultSpeed}
@@ -112,7 +125,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-400 mb-2">Mic Sensitivity (Gain)</label>
+                        <label className="block text-sm font-bold text-text-secondary mb-2">Mic Sensitivity (Gain)</label>
                         <input 
                           type="range" min="0.1" max="3.0" step="0.1" 
                           value={settings.micSensitivity}
@@ -122,10 +135,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-white/5 dark:bg-surface-secondary rounded-xl">
                     <div>
-                        <p className="font-bold">Enable Looping by Default</p>
-                        <p className="text-xs text-gray-500">Start every song with loop region active</p>
+                        <p className="font-bold text-text-primary">Enable Looping by Default</p>
+                        <p className="text-xs text-text-secondary">Start every song with loop region active</p>
                     </div>
                     <input 
                         type="checkbox" 
@@ -138,10 +151,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
 
              {/* Visual Settings */}
              <section className="space-y-6">
-                <h3 className="text-xl font-bold text-purple-400 border-b border-white/10 pb-2">Visuals</h3>
+                <h3 className="text-xl font-bold text-purple-400 border-b border-white/10 dark:border-border-default pb-2">Visuals</h3>
                 
                 <div>
-                    <label className="block text-sm font-bold text-gray-400 mb-2">Sheet Music Zoom ({settings.sheetMusicZoom}%)</label>
+                    <label className="block text-sm font-bold text-text-secondary mb-2">Sheet Music Zoom ({settings.sheetMusicZoom}%)</label>
                     <input 
                       type="range" min="50" max="200" step="10" 
                       value={settings.sheetMusicZoom}
@@ -150,10 +163,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                     />
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-white/5 dark:bg-surface-secondary rounded-xl">
                     <div>
-                        <p className="font-bold">Dark Mode</p>
-                        <p className="text-xs text-gray-500">Toggle application theme</p>
+                        <p className="font-bold text-text-primary">Dark Mode</p>
+                        <p className="text-xs text-text-secondary">Toggle application theme</p>
                     </div>
                     <input 
                         type="checkbox" 
@@ -165,11 +178,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                         <label className="block text-sm font-bold text-gray-400 mb-2">Sheet Music Style</label>
+                         <label className="block text-sm font-bold text-text-secondary mb-2">Sheet Music Style</label>
                          <select 
                             value={settings.noteDisplayStyle}
                             onChange={(e) => setSettings(s => ({ ...s, noteDisplayStyle: e.target.value as any }))}
-                            className="w-full p-3 rounded-xl bg-white/10 border border-white/10 focus:outline-none text-white dark:text-gray-200"
+                            className="w-full p-3 rounded-xl bg-white/10 dark:bg-surface-tertiary border border-white/10 dark:border-border-default focus:outline-none text-text-primary"
                          >
                              <option value="Standard">Standard</option>
                              <option value="ScaleDegree">Scale Degrees (1, 2, 3)</option>
@@ -178,11 +191,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                          </select>
                     </div>
                     <div>
-                         <label className="block text-sm font-bold text-gray-400 mb-2">Accidental Style</label>
+                         <label className="block text-sm font-bold text-text-secondary mb-2">Accidental Style</label>
                          <select 
                             value={settings.accidentalStyle}
                             onChange={(e) => setSettings(s => ({ ...s, accidentalStyle: e.target.value as any }))}
-                            className="w-full p-3 rounded-xl bg-white/10 border border-white/10 focus:outline-none text-white dark:text-gray-200"
+                            className="w-full p-3 rounded-xl bg-white/10 dark:bg-surface-tertiary border border-white/10 dark:border-border-default focus:outline-none text-text-primary"
                          >
                              <option value="Sharp">Sharps (♯)</option>
                              <option value="Flat">Flats (♭)</option>
@@ -193,13 +206,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
 
              {/* Audio & Data (Keep existing) */}
              <section className="space-y-6">
-                <h3 className="text-xl font-bold text-orange-400 border-b border-white/10 pb-2">Audio & Voice</h3>
+                <h3 className="text-xl font-bold text-orange-400 border-b border-white/10 dark:border-border-default pb-2">Audio & Voice</h3>
                 
                 {/* Pitch Detection Toggle */}
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center justify-between p-4 bg-white/5 dark:bg-surface-secondary rounded-xl border border-white/10 dark:border-border-default">
                     <div>
-                        <p className="font-bold text-white">Pitch Detection (Microphone)</p>
-                        <p className="text-xs text-gray-500">Enable real-time audio analysis.</p>
+                        <p className="font-bold text-text-primary">Pitch Detection (Microphone)</p>
+                        <p className="text-xs text-text-secondary">Enable real-time audio analysis.</p>
                     </div>
                     <input 
                         type="checkbox" 
@@ -214,21 +227,21 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                 </div>
 
                 {/* Audio Check */}
-                <div className={`p-4 bg-white/5 rounded-xl space-y-4 border border-white/10 ${!settings.pitchDetectionEnabled ? 'opacity-50 grayscale' : ''}`}>
+                <div className={`p-4 bg-white/5 dark:bg-surface-secondary rounded-xl space-y-4 border border-white/10 dark:border-border-default ${!settings.pitchDetectionEnabled ? 'opacity-50 grayscale' : ''}`}>
                     <div className="flex justify-between items-center">
-                        <p className="font-bold">Microphone Check</p>
+                        <p className="font-bold text-text-primary">Microphone Check</p>
                         <div className="flex items-center gap-2">
                             {currentInput.source === 'midi' && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">MIDI Connected</span>}
                             <button 
                                 onClick={handleRestartMic}
                                 disabled={isRestarting || !settings.pitchDetectionEnabled}
-                                className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 bg-white/10 dark:bg-surface-tertiary rounded-lg hover:bg-white/20 dark:hover:bg-surface-interactive transition-colors flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <RefreshIcon /> {isRestarting ? 'Restarting...' : 'Force Reconnect'}
                             </button>
                         </div>
                     </div>
-                    <div className="h-16 bg-black/40 rounded-lg relative overflow-hidden flex items-center justify-center border border-white/5">
+                    <div className="h-16 bg-black/40 dark:bg-surface-tertiary rounded-lg relative overflow-hidden flex items-center justify-center border border-white/5 dark:border-border-default">
                         <div 
                             className={`absolute bottom-0 left-0 right-0 transition-all duration-75 ease-out ${currentInput.volume < 0.001 ? 'bg-red-500' : 'bg-green-500'}`} 
                             style={{ height: `${Math.min(100, currentInput.volume * 2000)}%`, opacity: 0.3 }} 
@@ -237,10 +250,10 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                              {currentInput.activeNotes[0] ? (
                                  <>
                                     <span className="text-blue-400">{currentInput.activeNotes[0].note}{currentInput.activeNotes[0].octave}</span>
-                                    <span className="text-xs text-gray-500">({Math.round(currentInput.activeNotes[0].frequency)}Hz)</span>
+                                    <span className="text-xs text-text-secondary">({Math.round(currentInput.activeNotes[0].frequency)}Hz)</span>
                                  </>
                              ) : (
-                                 <span className={currentInput.volume < 0.001 ? "text-red-400" : "text-gray-600"}>
+                                 <span className={currentInput.volume < 0.001 ? "text-red-400" : "text-text-secondary"}>
                                      {settings.pitchDetectionEnabled ? (currentInput.volume < 0.001 ? "No Signal - Retrying..." : "Listening...") : "Detection Disabled"}
                                  </span>
                              )}
@@ -253,7 +266,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                         Export Progress (Backup)
                     </button>
                     <div className="flex-1 relative">
-                        <button className="w-full py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-white/10 transition">
+                        <button className="w-full py-3 border border-white/20 dark:border-border-default text-white dark:text-text-primary rounded-xl font-bold hover:bg-white/10 dark:hover:bg-surface-tertiary transition">
                             Import Backup
                         </button>
                         <input type="file" accept=".json" ref={fileInputRef} onChange={handleImport} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />

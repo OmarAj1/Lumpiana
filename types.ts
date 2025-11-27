@@ -136,6 +136,7 @@ export interface AppSettings {
   noteDisplayStyle: NoteDisplayStyle;
   accidentalStyle: AccidentalStyle;
   pitchDetectionEnabled: boolean; // Toggle mic usage
+  enableTouchPiano: boolean; // Allow clicking keys to play sound
   
   // New Settings
   flowMode: boolean;          // If true, game doesn't stop on miss, just marks red

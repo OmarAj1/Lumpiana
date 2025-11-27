@@ -20,6 +20,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   noteDisplayStyle: 'Standard',
   accidentalStyle: 'Sharp',
   pitchDetectionEnabled: true,
+  enableTouchPiano: false, // Default to disabled to keep UI clean unless requested
   
   flowMode: false, // Default to Stop & Wait (Strict)
   sheetMusicZoom: 100 // Default zoom level

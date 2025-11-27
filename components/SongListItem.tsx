@@ -22,7 +22,7 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, index, stats, bookCol
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ delay: index * 0.05 }}
-            className="group relative flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary dark:bg-white border border-white/5 dark:border-gray-200 hover:border-transparent overflow-hidden transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl"
+            className="group relative flex items-center gap-4 p-4 rounded-2xl bg-surface-secondary border border-border-default hover:border-transparent overflow-hidden transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl"
             onClick={onPlay}
         >
             <div 
@@ -42,10 +42,10 @@ const SongListItem: React.FC<SongListItemProps> = ({ song, index, stats, bookCol
             </div>
 
             <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-white dark:text-gray-900 text-lg truncate group-hover:translate-x-1 transition-transform">
+                <h4 className="font-bold text-text-primary text-lg truncate group-hover:translate-x-1 transition-transform">
                     {song.title}
                 </h4>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                <div className="flex items-center gap-2 text-sm text-text-secondary mt-1">
                     <span>{song.artist}</span>
                     {hasPlayed && (
                         <>

@@ -79,11 +79,11 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
   }, [currentInput.spectrum]);
 
   return (
-      <div className="h-screen flex flex-col bg-black text-white relative overflow-hidden">
+      <div className="h-screen flex flex-col bg-surface-primary text-white relative overflow-hidden">
           {/* Back Button */}
           <button 
             onClick={() => setAppState(AppState.MENU)} 
-            className="absolute top-6 left-6 z-50 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-colors font-bold text-sm"
+            className="absolute top-6 left-6 z-50 px-4 py-2 bg-white/10 dark:bg-surface-tertiary hover:bg-white/20 dark:hover:bg-surface-interactive rounded-full backdrop-blur-md transition-colors font-bold text-sm"
           >
               ← Back to Menu
           </button>
@@ -105,7 +105,7 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
                      {currentInput.activeNotes.length > 0 && (
                          <div className="flex gap-2 justify-center">
                              {currentInput.activeNotes.map((n, i) => (
-                                 <span key={i} className="px-3 py-1 bg-white/10 rounded-full font-mono text-sm border border-white/20">
+                                 <span key={i} className="px-3 py-1 bg-white/10 dark:bg-surface-tertiary rounded-full font-mono text-sm border border-white/20 dark:border-border-default">
                                      {n.note}{n.octave}
                                  </span>
                              ))}
@@ -117,13 +117,13 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
               {/* Chord History */}
               <div className="flex gap-4 opacity-60">
                   {chordHistory.slice(1).map((chord, i) => (
-                      <span key={i} className="text-xl font-bold text-gray-500">{chord}</span>
+                      <span key={i} className="text-xl font-bold text-text-secondary">{chord}</span>
                   ))}
               </div>
           </div>
 
           {/* Keyboard Visualizer (Non-Interactive) */}
-          <div className="h-[25vh] w-full bg-zinc-900/80 backdrop-blur-lg border-t border-white/10 flex items-end justify-center relative z-20 pb-0">
+          <div className="h-[25vh] w-full bg-zinc-900/80 dark:bg-surface-secondary backdrop-blur-lg border-t border-white/10 dark:border-border-default flex items-end justify-center relative z-20 pb-0">
                <div className="relative flex h-full w-full max-w-5xl mx-auto px-4">
                   {[3, 4, 5].map(octave => 
                       NOTES_ORDER.map((note) => {
@@ -149,6 +149,8 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
                                       isTarget={false}
                                       isInput={isActive} // Light up on input
                                       className="w-full h-full"
+                                      // Fix: Add required octave prop
+                                      octave={octave}
                                   />
                                   {blackKeyNote && (
                                       <div className="absolute top-0 right-0 w-0 h-full z-20 overflow-visible">
@@ -157,6 +159,8 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
                                               isBlack={true}
                                               isTarget={false}
                                               isInput={isBlackActive} // Light up on input
+                                              // Fix: Add required octave prop
+                                              octave={octave}
                                           />
                                       </div>
                                   )}
@@ -166,7 +170,7 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
                   )}
                </div>
                {/* Fade Overlay for edges */}
-               <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-black via-transparent to-black" />
+               <div className="absolute inset-0 pointer-events-none bg-surface-primary via-transparent to-surface-primary" />
           </div>
       </div>
   );

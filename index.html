@@ -8,9 +8,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="colors.css">
     <script>
       tailwind.config = {
-        darkMode: 'class',
+        darkMode: 'class', // The 'dark' class on <html> activates dark-mode styles for Tailwind's `dark:` utility.
         theme: {
           extend: {
             fontFamily: {
@@ -18,37 +19,37 @@
               mono: ['JetBrains Mono', 'SFMono-Regular', 'Menlo', 'monospace'],
             },
             colors: {
-              surface: {
-                primary: '#09090b', // Zinc 950 (Deep Black)
-                secondary: '#18181b', // Zinc 900
-                tertiary: '#27272a', // Zinc 800
-                glass: 'rgba(24, 24, 27, 0.6)',
-              },
+              // We use rgb(var(...) / <alpha-value>) to allow Tailwind's opacity modifiers (e.g., bg-surface-primary/50)
+              'surface-primary': 'rgb(var(--color-surface-primary) / <alpha-value>)',
+              'surface-secondary': 'rgb(var(--color-surface-secondary) / <alpha-value>)',
+              'surface-tertiary': 'rgb(var(--color-surface-tertiary) / <alpha-value>)',
+              'surface-glass': 'rgb(var(--color-surface-glass) / <alpha-value>)',
+              'surface-interactive': 'rgb(var(--color-surface-interactive) / <alpha-value>)',
+              
+              'text-primary': 'rgb(var(--color-text-primary) / <alpha-value>)',
+              'text-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
+              
+              'border-default': 'rgb(var(--color-border-default) / <alpha-value>)',
+              'border-glass-light': 'rgb(var(--color-border-glass-light) / <alpha-value>)',
+              
+              'key-white-border': 'rgb(var(--color-key-white-border) / <alpha-value>)',
+              'key-black-idle': 'rgb(var(--color-key-black-idle) / <alpha-value>)',
+
               brand: {
-                primary: '#3b82f6', // Apple Blue-ish
-                secondary: '#8b5cf6', // Violet
-              },
-              dark: {
-                surface: {
-                  primary: '#ffffff',
-                  secondary: '#f4f4f5', // Zinc 100
-                  interactive: '#e4e4e7', // Zinc 200
-                },
-                text: {
-                  primary: '#09090b',
-                  secondary: '#71717a' // Zinc 500
-                }
+                primary: 'rgb(var(--color-brand-primary) / <alpha-value>)',
+                secondary: 'rgb(var(--color-brand-secondary) / <alpha-value>)',
               },
               accent: {
-                blue: '#007AFF', // Apple Blue
-                success: '#34C759', // Apple Green
-                warning: '#FF9500', // Apple Orange
-                error: '#FF3B30', // Apple Red
+                blue: 'rgb(var(--color-accent-blue) / <alpha-value>)',
+                success: 'rgb(var(--color-accent-success) / <alpha-value>)',
+                warning: 'rgb(var(--color-accent-warning) / <alpha-value>)',
+                error: 'rgb(var(--color-accent-error) / <alpha-value>)',
               }
             },
             boxShadow: {
               'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-              'glow': '0 0 20px rgba(59, 130, 246, 0.5)',
+              'glow': '0 0 20px rgba(0, 122, 255, 0.5)',
+              'ios': '0 4px 12px rgba(0, 0, 0, 0.08)',
             },
             animation: {
               'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -76,8 +77,8 @@
     </script>
     <style>
       body {
-        background-color: #000000;
-        color: #e4e4e7;
+        background-color: rgb(var(--color-base-body-bg));
+        color: rgb(var(--color-base-body-text));
         overflow: hidden;
       }
       /* Hide Scrollbar for clean look */
@@ -85,20 +86,13 @@
         width: 0px;
         background: transparent;
       }
-      /* Dark mode overrides */
-      .dark body {
-        background-color: #ffffff;
-        color: #09090b;
-      }
+      /* Base glass styles (Dark Mode) */
       .glass-panel {
-        background: rgba(24, 24, 27, 0.6);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      .dark .glass-panel {
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        background: rgba(28, 28, 30, 0.75); /* Fallback */
+        background: rgb(var(--color-surface-glass) / 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgb(var(--color-border-glass-light) / 0.1);
       }
     </style>
   <script type="importmap">

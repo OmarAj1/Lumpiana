@@ -24,26 +24,26 @@ const FeedbackScreen: React.FC<FeedbackScreenProps> = ({ score, misses, currentS
             
             <div>
                 <h2 className="text-4xl font-bold mb-2">{score >= 90 ? 'Masterful!' : score >= 70 ? 'Great Job!' : 'Keep Practicing'}</h2>
-                <p className="text-xl text-gray-300 italic">"{aiFeedback}"</p>
+                <p className="text-xl text-text-secondary italic">"{aiFeedback}"</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 bg-white/5 rounded-2xl p-6 border border-white/10">
+            <div className="grid grid-cols-3 gap-4 bg-white/5 dark:bg-surface-secondary rounded-2xl p-6 border border-white/10 dark:border-border-default">
                 <div>
-                    <p className="text-gray-500 text-xs uppercase font-bold">Accuracy</p>
-                    <p className={`text-2xl font-mono ${score >= 90 ? 'text-green-400' : 'text-white'}`}>{score}%</p>
+                    <p className="text-text-secondary text-xs uppercase font-bold">Accuracy</p>
+                    <p className={`text-2xl font-mono ${score >= 90 ? 'text-green-400' : 'text-text-primary'}`}>{score}%</p>
                 </div>
                 <div>
-                    <p className="text-gray-500 text-xs uppercase font-bold">Notes Hit</p>
-                    <p className="text-2xl font-mono text-blue-400">{correctNotes}<span className="text-sm text-gray-500">/{totalNotes}</span></p>
+                    <p className="text-text-secondary text-xs uppercase font-bold">Notes Hit</p>
+                    <p className="text-2xl font-mono text-blue-400">{correctNotes}<span className="text-sm text-text-secondary">/{totalNotes}</span></p>
                 </div>
                 <div>
-                    <p className="text-gray-500 text-xs uppercase font-bold">XP Gained</p>
+                    <p className="text-text-secondary text-xs uppercase font-bold">XP Gained</p>
                     <p className="text-2xl font-mono text-yellow-400">+{correctNotes * 10}</p>
                 </div>
             </div>
 
             <div className="flex gap-4">
-                <button onClick={() => startSong(currentSong)} className="flex-1 py-4 bg-white/10 rounded-xl font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+                <button onClick={() => startSong(currentSong)} className="flex-1 py-4 bg-white/10 dark:bg-surface-tertiary rounded-xl font-bold hover:bg-white/20 dark:hover:bg-surface-interactive transition-all flex items-center justify-center gap-2">
                     <RefreshIcon /> Replay
                 </button>
                 <button onClick={() => setAppState(AppState.MENU)} className="flex-1 py-4 bg-blue-600 rounded-xl font-bold hover:bg-blue-500 transition-all">

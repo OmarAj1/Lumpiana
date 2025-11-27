@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './colors.css'; // Import the global colors
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
