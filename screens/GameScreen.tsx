@@ -1,6 +1,5 @@
 
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { audioEngine } from '../services/audioEngine';
 import { AppState, NoteStatus, LoopRegion, NoteName, AudioAnalysisResult, DetectedNote } from '../types';
@@ -9,7 +8,6 @@ import SheetMusic from '../components/SheetMusic';
 import PianoKey from '../components/PianoKey';
 import { speakText } from '../services/geminiService';
 import { authService } from '../services/authService';
-// Fix: Change to named import as VirtualPiano is not a default export
 import { VirtualPiano } from '../components/VirtualPiano'; 
 
 const GameScreen: React.FC = () => {
@@ -33,9 +31,6 @@ const GameScreen: React.FC = () => {
   const [isWaiting, setIsWaiting] = useState(false);
   const [waitingNoteLabel, setWaitingNoteLabel] = useState<string | null>(null);
   
-  // Virtual Keys State (Pressed via Touch/Mouse) - NO LONGER NEEDED HERE. VIRTUALPIANO HANDLES ITS OWN
-  // const [virtualPressedKeys, setVirtualPressedKeys] = useState<Set<string>>(new Set());
-
   const currentInputRef = useRef<AudioAnalysisResult>({ 
       activeNotes: [], volume: 0, snr: 0, clarity: 0, harmonicity: 0, spectralCentroid: 0, source: 'none' 
   });
@@ -49,9 +44,16 @@ const GameScreen: React.FC = () => {
   const animationFrameRef = useRef(0);
   const waitingTimeRef = useRef(0); 
 
-  // --- HANDLERS FOR VIRTUAL PIANO ---
-  // These are now handled internally by the VirtualPiano component.
-  // handleVirtualKeyPress and handleVirtualKeyRelease are removed from here.
+  // --- VIRTUAL PIANO STATE ---
+  const virtualNotesRef = useRef<Set<number>>(new Set());
+
+  const handleVirtualNoteOn = useCallback((midi: number) => {
+    virtualNotesRef.current.add(midi);
+  }, []);
+
+  const handleVirtualNoteOff = useCallback((midi: number) => {
+    virtualNotesRef.current.delete(midi);
+  }, []);
 
   useEffect(() => {
       if (!currentSong.notes) {
@@ -62,8 +64,9 @@ const GameScreen: React.FC = () => {
       currentTimeRef.current = 0;
       setCorrectCount(0);
       setMisses(0);
+      virtualNotesRef.current.clear();
       lastFrameTimeRef.current = performance.now();
-  }, [currentSong, setAppState]); // Added setAppState to dependency array
+  }, [currentSong, setAppState]); 
 
   useEffect(() => {
       const loop = () => {
@@ -74,11 +77,25 @@ const GameScreen: React.FC = () => {
           // 1. Get Audio Input
           const audioAnalysis = audioEngine.analyze();
           
+          // 2. Merge Virtual Piano Inputs
+          const virtualDetected: DetectedNote[] = [];
+          virtualNotesRef.current.forEach(midi => {
+              virtualDetected.push({
+                  note: NOTES_ORDER[midi % 12],
+                  octave: Math.floor(midi / 12) - 1,
+                  cents: 0,
+                  frequency: 440 * Math.pow(2, (midi - 69) / 12),
+                  confidence: 1.0,
+                  midi: midi
+              });
+          });
+
+          // Combine microphone/midi notes with virtual screen notes
           currentInputRef.current = {
               ...audioAnalysis,
-              // No need to merge virtualPressedKeys here, as VirtualPiano manages its own input/audio.
-              // If `enableTouchPiano` is true, the `VirtualPiano` component is active and handles input directly.
-              // If `enableTouchPiano` is false, `audioEngine.analyze()` correctly reports mic/MIDI.
+              activeNotes: [...audioAnalysis.activeNotes, ...virtualDetected],
+              // If virtual keys are pressed, consider input source valid for gameplay
+              source: virtualDetected.length > 0 ? 'midi' : audioAnalysis.source 
           };
           
           if (isPlaying && currentSong?.notes && currentSong.notes.length > 0) {
@@ -141,12 +158,12 @@ const GameScreen: React.FC = () => {
                           
                           if (noteResultsRef.current.get(idx) === NoteStatus.CORRECT) return;
 
-                          // CHECK INPUT (Audio only, as virtual input is now self-contained in VirtualPiano.tsx if enabled)
-                          const isHitAudio = currentInputRef.current.activeNotes.some(
+                          // CHECK INPUT (Merged Audio + Virtual)
+                          const isHit = currentInputRef.current.activeNotes.some(
                               detected => detected.note === noteObj.note && detected.octave === noteObj.octave
                           );
                           
-                          if (isHitAudio) {
+                          if (isHit) {
                               noteResultsRef.current.set(idx, NoteStatus.CORRECT);
                               // Increment count of correct notes
                               setCorrectCount(c => c + 1);
@@ -201,7 +218,7 @@ const GameScreen: React.FC = () => {
       
       animationFrameRef.current = requestAnimationFrame(loop);
       return () => cancelAnimationFrame(animationFrameRef.current);
-  }, [isPlaying, currentSong, playbackSpeed, loopRegion, settings.flowMode, settings.enableTTS, setAppState, currentUser, setCurrentUser, setLastSessionStats]); // isPlaying is intentionally a dependency to pause/resume the loop.
+  }, [isPlaying, currentSong, playbackSpeed, loopRegion, settings.flowMode, settings.enableTTS, setAppState, currentUser, setCurrentUser, setLastSessionStats]); 
 
   const finishLesson = async () => {
       setIsPlaying(false);
@@ -299,8 +316,8 @@ const GameScreen: React.FC = () => {
 
            {/* PIANO - RENDER VIRTUAL PIANO OR PIANOKEYS */}
            {settings.enableTouchPiano ? (
-               <div className="h-[35vh] w-full bg-[#121214] dark:bg-surface-tertiary relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 dark:border-border-default flex items-end justify-center overflow-hidden select-none">
-                   <VirtualPiano isDark={settings.darkMode} settings={settings} />
+               <div className="h-[35vh] w-full bg-[#121214] dark:bg-surface-tertiary relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 dark:border-border-default flex flex-col justify-end overflow-hidden select-none">
+                   <VirtualPiano onNotePlay={handleVirtualNoteOn} onNoteStop={handleVirtualNoteOff} />
                </div>
            ) : (
                <div className="h-[35vh] w-full bg-[#121214] dark:bg-surface-tertiary relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 dark:border-border-default flex items-end justify-center overflow-hidden select-none">

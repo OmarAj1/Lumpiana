@@ -22,7 +22,6 @@ const hexToRgba = (hex: string, alpha: number) => {
     }
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
-    // Fix: Declare 'b' with const
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
@@ -41,6 +40,17 @@ export const LevelLayout = ({ book, currentUser, onClose, startSong, children, c
         hexToRgba(book.accentColor, 0),   // Start with transparent border
         hexToRgba(book.accentColor, 0.05)  // End with 5% opaque accent color border
     ]);
+
+    // New: Sticky header content animation
+    const stickyIconOpacity = useTransform(scrollY, [250, 400], [0, 1]);
+    const stickyTitleOpacity = useTransform(scrollY, [300, 450], [0, 1]);
+    const stickyIconScale = useTransform(scrollY, [250, 400], [0.8, 1]); // Raw scale factor for size animation
+    const stickyTitleY = useTransform(scrollY, [300, 450], [10, 0]); // Slide in from bottom
+
+    // New: Derive width, height, and font-size from stickyIconScale
+    const stickyIconWidth = useTransform(stickyIconScale, s => `${s * 32}px`);
+    const stickyIconHeight = useTransform(stickyIconScale, s => `${s * 32}px`);
+    const stickyIconFontSize = useTransform(stickyIconScale, s => `${s * 16}px`);
 
     const [listFilter, setListFilter] = useState<'Course' | 'Song'>('Course');
     
@@ -106,30 +116,55 @@ export const LevelLayout = ({ book, currentUser, onClose, startSong, children, c
                 </motion.div>
 
                 {/* 2. STICKY NAV BAR & LIST CONTENT */}
-                <div className="relative z-20 min-h-screen -mt-12">
-                    <div className="max-w-6xl mx-auto">
-                        
-                        {/* UNIFIED STICKY HEADER: [Back] [Tabs] [Count] */}
-                        <motion.div 
-                            className="sticky top-0 z-40 py-3 px-6 mb-6 flex items-center gap-4 shadow-lg transition-all duration-300 ease-in-out bg-surface-secondary/70 backdrop-blur-2xl"
-                            style={{ 
-                                borderBottom: '1px solid',
-                                borderBottomColor: stickyBorderColor, // Themed border color
-                                WebkitBackdropFilter: "blur(20px)", // For Safari
-                            }}
-                        >
-                            {/* Inner container for max-width and auto-margin */}
-                            <div className="max-w-6xl mx-auto w-full flex items-center gap-4">
-                                {/* Back Button */}
-                                <button 
-                                    onClick={onClose}
-                                    className="px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-1 transition-colors group text-text-secondary hover:bg-white/10 dark:hover:bg-surface-interactive active:scale-95"
-                                    title="Go Back"
-                                >
-                                    <ChevronLeftIcon className="w-5 h-5 group-hover:text-text-primary" /> 
-                                    <span className="group-hover:text-text-primary">Back</span>
-                                </button>
+                <div className="relative z-20 flex-1 -mt-12 bg-surface-primary rounded-t-3xl shadow-xl overflow-hidden">
+                    {/* UNIFIED STICKY HEADER: [Back] [Book Info] [Tabs] [Count] */}
+                    <motion.div 
+                        className="sticky top-0 z-40 py-3 px-6 flex items-center shadow-lg transition-all duration-300 ease-in-out bg-surface-primary/80 backdrop-blur-2xl"
+                        style={{ 
+                            borderBottom: '1px solid',
+                            borderBottomColor: stickyBorderColor, // Themed border color
+                            WebkitBackdropFilter: "blur(20px)", // For Safari
+                        }}
+                    >
+                        <div className="max-w-6xl mx-auto w-full flex items-center gap-4">
+                            {/* Back Button */}
+                            <button 
+                                onClick={onClose}
+                                className="px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-1 transition-colors group text-text-secondary hover:bg-white/10 dark:hover:bg-surface-interactive active:scale-95 shrink-0"
+                                title="Go Back"
+                            >
+                                <ChevronLeftIcon className="w-5 h-5 group-hover:text-text-primary" /> 
+                                <span className="group-hover:text-text-primary">Back</span>
+                            </button>
 
+                            {/* Book Icon & Title (Animated) */}
+                            <motion.div 
+                                className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
+                                style={{ opacity: stickyIconOpacity }}
+                            >
+                                <motion.div 
+                                    className="rounded-lg flex items-center justify-center shrink-0"
+                                    style={{
+                                        background: `${book.accentColor}20`,
+                                        color: book.accentColor,
+                                        width: stickyIconWidth, // Use derived motion value
+                                        height: stickyIconHeight, // Use derived motion value
+                                        fontSize: stickyIconFontSize, // Use derived motion value
+                                        border: `1px solid ${book.accentColor}40`
+                                    }}
+                                >
+                                    {book.icon}
+                                </motion.div>
+                                <motion.span 
+                                    className="text-lg font-bold text-text-primary truncate"
+                                    style={{ opacity: stickyTitleOpacity, y: stickyTitleY }}
+                                >
+                                    {book.title}
+                                </motion.span>
+                            </motion.div>
+
+                            {/* Tabs and Track Count (Pushed to right) */}
+                            <div className="flex-1 flex justify-end items-center gap-4 ml-auto"> {/* Use ml-auto to push to right */}
                                 {/* Tabs */}
                                 <div className="flex p-1.5 rounded-full bg-white/5 dark:bg-surface-interactive border border-border-default shadow-inner">
                                     {(['Course', 'Song'] as const).map(f => (
@@ -150,19 +185,17 @@ export const LevelLayout = ({ book, currentUser, onClose, startSong, children, c
                                     ))}
                                 </div>
 
-                                {/* Spacer */}
-                                <div className="flex-1" />
-
                                 {/* Track Count */}
-                                <div className="text-sm font-semibold text-text-secondary flex items-center gap-2">
+                                <div className="text-sm font-semibold text-text-secondary flex items-center gap-2 shrink-0">
                                     <HeadphonesIcon className="w-4 h-4 text-text-secondary" />
                                     {displayedSongs.length} Tracks
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
+                    </motion.div>
 
-                        {/* Song List */}
-                        <div className="space-y-3 px-4 md:px-0 pb-32">
+                    {/* Song List */}
+                    <div className="space-y-3 px-4 md:px-0 py-8 pb-32">
                              <AnimatePresence mode="popLayout">
                                 {displayedSongs.length > 0 ? (
                                     displayedSongs.map((song, i) => (
@@ -194,7 +227,6 @@ export const LevelLayout = ({ book, currentUser, onClose, startSong, children, c
                         </div>
                     </div>
                 </div>
-            </div>
-        </motion.div>
-    );
+            </motion.div>
+        );
 };
