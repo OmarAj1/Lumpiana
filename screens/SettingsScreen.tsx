@@ -199,6 +199,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ setAppState, settings, 
                          >
                              <option value="Sharp">Sharps (♯)</option>
                              <option value="Flat">Flats (♭)</option>
+                             <option value="SharpAndFlat">Sharp and Flat (Contextual)</option>
                          </select>
                     </div>
                 </div>

@@ -18,7 +18,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   themeColor: 'blue',
   darkMode: true, // Dark mode enabled by default
   noteDisplayStyle: 'Standard',
-  accidentalStyle: 'Sharp',
+  accidentalStyle: 'Sharp', // Default to 'Sharp' to maintain existing behavior
   pitchDetectionEnabled: true,
   enableTouchPiano: false, // Default to disabled to keep UI clean unless requested
   

@@ -148,7 +148,8 @@ export const DEMO_SONG: Song = {
     { note: NoteName.E, octave: 4, duration: 1.5, startTime: 12, finger: 3 },
     { note: NoteName.D, octave: 4, duration: 0.5, startTime: 13.5, finger: 2 },
     { note: NoteName.D, octave: 4, duration: 2, startTime: 14, finger: 2 },
-  ]
+  ],
+  keySignature: 'C' // Added for contextual accidental testing
 };
 
 // ==========================================
@@ -173,7 +174,8 @@ const STAGE_1_SONGS: Song[] = [
             { note: NoteName.E, octave: 4, duration: 1, startTime: 10, finger: 3, lyrics: "wood" },
             { note: NoteName.D, octave: 4, duration: 1, startTime: 11, finger: 2, lyrics: "??" },
             { note: NoteName.C, octave: 4, duration: 2, startTime: 12, finger: 1, lyrics: "chuck?" },
-        ]
+        ],
+        keySignature: 'C'
     },
     {
         id: 'pre-a-speedboat', title: 'The Speed Boat', artist: 'Schaum Pre-A', difficulty: 'Beginner', bpm: 70, category: 'Song', stage: 1, book: 'Pre-A',
@@ -189,7 +191,8 @@ const STAGE_1_SONGS: Song[] = [
             { note: NoteName.E, octave: 4, duration: 1, startTime: 10, finger: 3, lyrics: "speed" },
             { note: NoteName.D, octave: 4, duration: 1, startTime: 11, finger: 2, lyrics: "boat." },
             { note: NoteName.C, octave: 4, duration: 4, startTime: 12, finger: 1, lyrics: "." },
-        ]
+        ],
+        keySignature: 'C'
     },
     {
         id: 'pre-a-escalator', title: 'The Escalator', artist: 'Schaum Pre-A', difficulty: 'Beginner', bpm: 80, category: 'Song', stage: 1, book: 'Pre-A',
@@ -203,7 +206,8 @@ const STAGE_1_SONGS: Song[] = [
             { note: NoteName.A, octave: 4, duration: 1, startTime: 5, hand: 'r', finger: 2 },
             { note: NoteName.B, octave: 4, duration: 1, startTime: 6, hand: 'r', finger: 3 },
             { note: NoteName.C, octave: 5, duration: 1, startTime: 7, hand: 'r', finger: 4 }
-        ]
+        ],
+        keySignature: 'C'
     }
 ];
 
@@ -226,7 +230,8 @@ const STAGE_2_SONGS: Song[] = [
             { note: NoteName.E, octave: 4, duration: 1, startTime: 7, finger: 3 },
             { note: NoteName.C, octave: 4, duration: 1, startTime: 8, finger: 1 },
             { note: NoteName.G, octave: 3, duration: 3, startTime: 9, hand: 'l', finger: 5 }
-        ]
+        ],
+        keySignature: 'G'
     },
     {
         id: 'a-wishes', title: 'The Wishing Well', artist: 'Schaum Book A', difficulty: 'Beginner', bpm: 85, category: 'Song', stage: 2, book: 'A',
@@ -234,7 +239,8 @@ const STAGE_2_SONGS: Song[] = [
             { note: NoteName.E, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 1 },
             { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 3 },
             { note: NoteName.E, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.C, octave: 4, duration: 2, startTime: 6 }
-        ]
+        ],
+        keySignature: 'G'
     }
 ];
 
@@ -256,7 +262,8 @@ const STAGE_3_SONGS: Song[] = [
             { note: NoteName.G, octave: 4, duration: 1, startTime: 7, hand: 'r', finger: 5, lyrics: "ing" },
             { note: NoteName.E, octave: 4, duration: 1, startTime: 8, hand: 'r', finger: 3, lyrics: "Down" },
             { note: NoteName.C, octave: 4, duration: 3, startTime: 9, hand: 'r', finger: 1, lyrics: "!" }
-        ]
+        ],
+        keySignature: 'C'
     },
     {
         id: 'b-strangelands', title: 'Strange Lands', artist: 'Schumann (Schaum B)', difficulty: 'Intermediate', bpm: 60, category: 'Song', stage: 3, book: 'B',
@@ -265,7 +272,8 @@ const STAGE_3_SONGS: Song[] = [
             { note: NoteName.E, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 2 },
             { note: NoteName.G, octave: 4, duration: 2, startTime: 3 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 5 },
             { note: NoteName.D, octave: 4, duration: 2, startTime: 6 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 8 }
-        ]
+        ],
+        keySignature: 'G'
     }
 ];
 
@@ -281,7 +289,8 @@ const STAGE_4_SONGS: Song[] = [
             { note: NoteName.E, octave: 4, duration: 1, startTime: 2, finger: 3 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 3, finger: 5 },
             { note: NoteName.A, octave: 4, duration: 1, startTime: 4, finger: 1 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 5, finger: 5 },
             { note: NoteName.E, octave: 4, duration: 2, startTime: 6, finger: 3 }
-        ]
+        ],
+        keySignature: 'C'
     },
     {
         id: 'c-thunderer', title: 'The Thunderer', artist: 'Sousa (Schaum C)', difficulty: 'Intermediate', bpm: 110, category: 'Song', stage: 4, book: 'C',
@@ -290,7 +299,8 @@ const STAGE_4_SONGS: Song[] = [
             { note: NoteName.C, octave: 4, duration: 1, startTime: 0 }, { note: NoteName.G, octave: 3, duration: 0.5, startTime: 1 }, { note: NoteName.G, octave: 3, duration: 0.5, startTime: 1.5 },
             { note: NoteName.C, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.E, octave: 4, duration: 1, startTime: 3 },
             { note: NoteName.G, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.E, octave: 4, duration: 2, startTime: 6 }
-        ]
+        ],
+        keySignature: 'C'
     }
 ];
 
@@ -313,7 +323,8 @@ const STAGE_5_SONGS: Song[] = [
             
             { note: NoteName.E, octave: 4, duration: 2, startTime: 6, finger: 3 },
             { note: NoteName.D, octave: 4, duration: 1, startTime: 8, finger: 2 }
-        ]
+        ],
+        keySignature: 'G'
     },
     {
         id: 'd-star', title: 'Star of Midnight', artist: 'Dvorak (Schaum D)', difficulty: 'Advanced', bpm: 60, category: 'Song', stage: 5, book: 'D',
@@ -321,7 +332,8 @@ const STAGE_5_SONGS: Song[] = [
             // Largo
             { note: NoteName.E, octave: 4, duration: 2, startTime: 0 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 2 }, { note: NoteName.G, octave: 4, duration: 1, startTime: 3 },
             { note: NoteName.E, octave: 4, duration: 2, startTime: 4 }, { note: NoteName.D, octave: 4, duration: 1, startTime: 6 }, { note: NoteName.C, octave: 4, duration: 1, startTime: 7 }
-        ]
+        ],
+        keySignature: 'C'
     }
 ];
 
@@ -346,7 +358,8 @@ const STAGE_6_SONGS: Song[] = [
                     { note: NoteName.C, octave: 4, duration: 0.25, startTime: start + 1.75 }
                 ];
             })
-        ]
+        ],
+        keySignature: 'dmin' // D minor for the context
     },
     {
         id: 's6-fantasie', title: 'Fantaisie-Impromptu', artist: 'Chopin', difficulty: 'Master', bpm: 140, category: 'Song', stage: 6, book: 'Virtuoso',
@@ -363,7 +376,8 @@ const STAGE_6_SONGS: Song[] = [
                     { note: NoteName.E, octave: 5, duration: 1, startTime: s + 3, hand: 'r' },
                 ];
             })
-        ]
+        ],
+        keySignature: 'c#min' // C# minor for context
     }
 ];
 

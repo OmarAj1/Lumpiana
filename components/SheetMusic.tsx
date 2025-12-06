@@ -1,5 +1,7 @@
+
+
 import React, { useEffect, useRef } from 'react';
-import { NoteEvent, AudioAnalysisResult, NoteName, NoteStatus, LoopRegion, AppSettings } from '../types';
+import { NoteEvent, AudioAnalysisResult, NoteName, NoteStatus, LoopRegion, AppSettings, AccidentalStyle } from '../types';
 
 interface SheetMusicProps {
   songNotes: NoteEvent[];
@@ -10,6 +12,7 @@ interface SheetMusicProps {
   bpm: number;
   loopRegion?: LoopRegion;
   settings?: AppSettings;
+  songKeySignature?: string; // New prop for key signature
 }
 
 const SheetMusic: React.FC<SheetMusicProps> = ({ 
@@ -18,7 +21,8 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
   currentInput,
   results,
   loopRegion,
-  settings
+  settings,
+  songKeySignature // Use the new prop
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -76,9 +80,35 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
     return centerY - (stepsFromB4 * (STAFF_LINE_SPACING / 2));
   };
 
-  const formatAccidental = (note: string, style: 'Sharp' | 'Flat' = 'Sharp') => {
-      if (!note.includes('#')) return null;
-      return style === 'Sharp' ? '♯' : '♭';
+  const formatAccidental = (noteName: NoteName, style: AccidentalStyle, keySignature?: string) => {
+      // Only apply accidental symbol if the NoteName itself denotes a sharp
+      if (!noteName.includes('#')) {
+          return null;
+      }
+
+      if (style === 'Sharp') {
+          return '♯';
+      } else if (style === 'Flat') {
+          return '♭';
+      } else if (style === 'SharpAndFlat') {
+          // Simple heuristic: check song's key signature to prefer sharp or flat spelling
+          const normalizedKey = keySignature?.toLowerCase() || '';
+
+          // Prioritize explicit flat keys for flat spelling
+          const flatKeys = ['f', 'bb', 'eb', 'ab', 'db', 'gb', 'dmin', 'gmin', 'cmin', 'fmin', 'bbmin', 'ebmin', 'abmin'];
+          if (flatKeys.some(fk => normalizedKey.startsWith(fk))) {
+              return '♭';
+          }
+          // Prioritize explicit sharp keys for sharp spelling
+          const sharpKeys = ['c', 'g', 'd', 'a', 'e', 'b', 'f#', 'amin', 'emin', 'bmin', 'f#min', 'c#min', 'g#min', 'd#min'];
+          if (sharpKeys.some(sk => normalizedKey.startsWith(sk))) {
+              return '♯';
+          }
+          
+          // Default for neutral keys or unknown keys is sharp, as our NoteName enum uses sharps
+          return '♯';
+      }
+      return null; // Should not be reached, but for type safety
   };
 
   useEffect(() => {
@@ -258,11 +288,13 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
             ctx.stroke();
             
             // Accidental
-            const accidental = formatAccidental(noteEvent.note, accidentalStyle);
+            const accidental = formatAccidental(noteEvent.note, accidentalStyle, songKeySignature); // Pass songKeySignature here
             if (accidental) {
-                ctx.font = '20px serif';
+                // Increased font size and adjusted position for better visibility
+                ctx.font = 'bold 24px serif';
                 ctx.fillStyle = fillStyle;
-                ctx.fillText(accidental, x - 22, y + 8);
+                // Place it further left (x-25) to avoid overlap
+                ctx.fillText(accidental, x - 28, y + 8);
             }
 
             // --- FINGER NUMBERING ---
@@ -326,7 +358,7 @@ const SheetMusic: React.FC<SheetMusicProps> = ({
     
     const animationId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animationId);
-  }, [songNotes, currentTime, currentInput, results, loopRegion, settings]);
+  }, [songNotes, currentTime, currentInput, results, loopRegion, settings, songKeySignature]);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-surface-secondary/40 backdrop-blur-lg border-b border-white/10 dark:border-border-default">

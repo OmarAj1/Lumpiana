@@ -1,14 +1,13 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { audioEngine } from '../services/audioEngine';
 import { AppState, NoteStatus, LoopRegion, NoteName, AudioAnalysisResult, DetectedNote } from '../types';
 import { NOTES_ORDER, STAR_THRESHOLDS, NOTE_FREQUENCIES } from '../constants';
 import SheetMusic from '../components/SheetMusic';
-import PianoKey from '../components/PianoKey';
 import { speakText } from '../services/geminiService';
 import { authService } from '../services/authService';
 import { VirtualPiano } from '../components/VirtualPiano'; 
+import { audioEngine } from '../services/audioEngine';
 
 const GameScreen: React.FC = () => {
   const { 
@@ -40,7 +39,8 @@ const GameScreen: React.FC = () => {
 
   const playedBackingChordsRef = useRef<Set<number>>(new Set());
   const currentTimeRef = useRef(0);
-  const lastFrameTimeRef = useRef(0);
+  // Declare lastFrameTimeRef
+  const lastFrameTimeRef = useRef(performance.now());
   const animationFrameRef = useRef(0);
   const waitingTimeRef = useRef(0); 
 
@@ -51,9 +51,22 @@ const GameScreen: React.FC = () => {
     virtualNotesRef.current.add(midi);
   }, []);
 
+  // New: Define handleNoteStop for VirtualPiano component
   const handleVirtualNoteOff = useCallback((midi: number) => {
     virtualNotesRef.current.delete(midi);
   }, []);
+
+  // Helper to calculate MIDI number from NoteEvent
+  const getMidiNumber = (note: NoteName, octave: number): number => {
+      const noteIndex = NOTES_ORDER.indexOf(note);
+      // MIDI 60 is C4. C is index 0. 
+      // Formula: (Octave + 1) * 12 + NoteIndex
+      return (octave + 1) * 12 + noteIndex;
+  };
+
+  const formatNoteLabel = (note: string, octave: number) => {
+      return `${note.replace('#', '♯')}${octave}`;
+  };
 
   useEffect(() => {
       if (!currentSong.notes) {
@@ -154,14 +167,22 @@ const GameScreen: React.FC = () => {
 
                       concurrentIndices.forEach(idx => {
                           const noteObj = currentSong.notes[idx];
-                          noteLabels.push(`${noteObj.note}${noteObj.octave}`);
+                          noteLabels.push(formatNoteLabel(noteObj.note, noteObj.octave));
                           
                           if (noteResultsRef.current.get(idx) === NoteStatus.CORRECT) return;
 
+                          const targetMidi = getMidiNumber(noteObj.note, noteObj.octave);
+
                           // CHECK INPUT (Merged Audio + Virtual)
-                          const isHit = currentInputRef.current.activeNotes.some(
-                              detected => detected.note === noteObj.note && detected.octave === noteObj.octave
-                          );
+                          // Robust check: Match either strict MIDI number OR Note/Octave combination
+                          const isHit = currentInputRef.current.activeNotes.some(detected => {
+                              // If midi is available (VirtualPiano/MIDI), use it for exact match
+                              if (detected.midi !== undefined) {
+                                  return detected.midi === targetMidi;
+                              }
+                              // Fallback for microphone audio analysis
+                              return detected.note === noteObj.note && detected.octave === noteObj.octave;
+                          });
                           
                           if (isHit) {
                               noteResultsRef.current.set(idx, NoteStatus.CORRECT);
@@ -218,7 +239,7 @@ const GameScreen: React.FC = () => {
       
       animationFrameRef.current = requestAnimationFrame(loop);
       return () => cancelAnimationFrame(animationFrameRef.current);
-  }, [isPlaying, currentSong, playbackSpeed, loopRegion, settings.flowMode, settings.enableTTS, setAppState, currentUser, setCurrentUser, setLastSessionStats]); 
+  }, [isPlaying, currentSong, playbackSpeed, loopRegion, settings.flowMode, settings.enableTTS, setAppState, currentUser, setCurrentUser, setLastSessionStats, handleVirtualNoteOff]); 
 
   const finishLesson = async () => {
       setIsPlaying(false);
@@ -260,7 +281,7 @@ const GameScreen: React.FC = () => {
   const realtimeAccuracy = currentTotal > 0 ? Math.round((correctCount / currentTotal) * 100) : 100;
 
   return (
-    <div className="h-screen flex flex-col bg-surface-primary text-white overflow-hidden relative font-sans">
+    <div className="h-[100dvh] flex flex-col bg-surface-primary text-white overflow-hidden relative font-sans">
        
        {/* FLOATING HUD (Dynamic Island Style) */}
        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-6 px-6 py-3 bg-zinc-900/80 dark:bg-surface-glass backdrop-blur-xl rounded-full border border-border-default shadow-2xl">
@@ -285,8 +306,8 @@ const GameScreen: React.FC = () => {
        </div>
 
        {/* MAIN CONTENT */}
-       <div className="flex-1 relative flex flex-col">
-           <div className="flex-1 relative bg-gradient-to-b from-zinc-900 to-black dark:from-surface-secondary dark:to-surface-primary">
+       <div className="flex-1 relative flex flex-col min-h-0">
+           <div className="flex-1 relative bg-gradient-to-b from-zinc-900 to-black dark:from-surface-secondary dark:to-surface-primary min-h-0">
                <SheetMusic 
                     songNotes={currentSong?.notes || []} 
                     currentTime={currentTimeInBeats} 
@@ -296,6 +317,7 @@ const GameScreen: React.FC = () => {
                     isPlaying={isPlaying}
                     loopRegion={loopRegion}
                     settings={settings}
+                    songKeySignature={currentSong?.keySignature}
                />
                {isWaiting && waitingNoteLabel && (
                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
@@ -307,73 +329,12 @@ const GameScreen: React.FC = () => {
            </div>
            
            {/* CONTROL STRIP */}
-           <div className="h-10 bg-zinc-900 dark:bg-surface-secondary border-t border-white/5 dark:border-border-default flex items-center px-4 gap-4 shrink-0 justify-center">
-               <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Loop Region</span>
-               <input type="range" min="0" max={(currentSong?.notes?.[currentSong.notes.length-1]?.startTime) || 30} value={loopRegion.start} onChange={e => setLoopRegion(p => ({ ...p, start: parseFloat(e.target.value) }))} className="w-32 h-1 accent-blue-500 bg-white/10 dark:bg-surface-tertiary rounded-full appearance-none" />
-               <input type="range" min="0" max={(currentSong?.notes?.[currentSong.notes.length-1]?.startTime) || 30} value={loopRegion.end} onChange={e => setLoopRegion(p => ({ ...p, end: parseFloat(e.target.value) }))} className="w-32 h-1 accent-blue-500 bg-white/10 dark:bg-surface-tertiary rounded-full appearance-none" />
-               <div className={`w-2 h-2 rounded-full ${loopRegion.active ? 'bg-blue-500' : 'bg-gray-600'} cursor-pointer`} onClick={() => setLoopRegion(p => ({ ...p, active: !p.active }))} />
-           </div>
+           {/* Removed the loop region bar entirely as per user request */}
 
-           {/* PIANO - RENDER VIRTUAL PIANO OR PIANOKEYS */}
-           {settings.enableTouchPiano ? (
-               <div className="h-[35vh] w-full bg-[#121214] dark:bg-surface-tertiary relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 dark:border-border-default flex flex-col justify-end overflow-hidden select-none">
+           {/* PIANO - RENDER VIRTUAL PIANO */}
+           {settings.enableTouchPiano && (
+               <div className="h-[35vh] w-full bg-[#121214] dark:bg-surface-tertiary relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 dark:border-border-default flex flex-col justify-end overflow-hidden select-none z-10">
                    <VirtualPiano onNotePlay={handleVirtualNoteOn} onNoteStop={handleVirtualNoteOff} />
-               </div>
-           ) : (
-               <div className="h-[35vh] w-full bg-[#121214] dark:bg-surface-tertiary relative shrink-0 shadow-[0_-20px_60px_rgba(0,0,0,0.7)] border-t border-white/10 dark:border-border-default flex items-end justify-center overflow-hidden select-none">
-                   <div className="relative flex h-full w-full max-w-[1400px] mx-auto">
-                       {[3, 4, 5].map(octave => 
-                           NOTES_ORDER.map((note) => {
-                               const isBlack = note.includes('#');
-                               const noteStr = `${note}${octave}`;
-                               const isTarget = waitingNoteLabel?.includes(noteStr) || false;
-                               
-                               // Check for Audio Input
-                               const isUserInput = visInput.activeNotes.some(n => n.note === note && n.octave === octave);
-
-                               if (isBlack) return null;
-                               
-                               let blackKeyNote: NoteName | null = null;
-                               if (note === NoteName.C) blackKeyNote = NoteName.Cs;
-                               if (note === NoteName.D) blackKeyNote = NoteName.Ds;
-                               if (note === NoteName.F) blackKeyNote = NoteName.Fs;
-                               if (note === NoteName.G) blackKeyNote = NoteName.Gs;
-                               if (note === NoteName.A) blackKeyNote = NoteName.As;
-
-                               const blackNoteStr = blackKeyNote ? `${blackKeyNote}${octave}` : '';
-                               const isBlackTarget = blackKeyNote ? waitingNoteLabel?.includes(blackNoteStr) : false;
-                               const isBlackInput = blackKeyNote ? (visInput.activeNotes.some(n => n.note === blackKeyNote && n.octave === octave)) : false;
-
-                               return (
-                                   <div key={noteStr} className="flex-1 relative h-full">
-                                       <PianoKey 
-                                           note={note} isBlack={false} 
-                                           isTarget={isTarget}
-                                           isInput={isUserInput}
-                                           label={settings.showNoteLabels ? note : undefined}
-                                           className="w-full h-full"
-                                           interactive={true} // Always interactive for this mode
-                                           octave={octave}
-                                           useAppPianoSound={true} // Use app's sound for this mode
-                                       />
-                                       {blackKeyNote && (
-                                           <div className="absolute top-0 right-0 w-0 h-full z-20 overflow-visible">
-                                               <PianoKey
-                                                   note={blackKeyNote}
-                                                   isBlack={true}
-                                                   isTarget={isBlackTarget || false}
-                                                   isInput={isBlackInput || false}
-                                                   interactive={true} // Always interactive for this mode
-                                                   octave={octave}
-                                                   useAppPianoSound={true} // Use app's sound for this mode
-                                               />
-                                           </div>
-                                       )}
-                                   </div>
-                               );
-                           })
-                       )}
-                   </div>
                </div>
            )}
        </div>

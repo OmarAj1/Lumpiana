@@ -31,7 +31,7 @@ export type SongCategory = 'Song' | 'Course' | 'Workout' | 'Jam';
 
 export type NoteDisplayStyle = 'Standard' | 'ScaleDegree' | 'Lyrics' | 'NoteName';
 
-export type AccidentalStyle = 'Sharp' | 'Flat';
+export type AccidentalStyle = 'Sharp' | 'Flat' | 'SharpAndFlat';
 
 // Updated to reflect Schaum Books
 export type SongStage = 1 | 2 | 3 | 4 | 5 | 6;

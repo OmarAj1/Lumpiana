@@ -39,6 +39,21 @@
   /* Generic body styles */
   --color-base-body-bg: 0 0 0;
   --color-base-body-text: 255 255 255;
+
+  /* Virtual Piano Specific Colors */
+  --virtual-piano-white-key-bg-idle: 255 255 255;
+  --virtual-piano-white-key-bg-active: 224 224 224;
+  --virtual-piano-white-key-border: 170 170 170;
+  --virtual-piano-white-key-label-idle: 148 163 184; /* slate-400 */
+  --virtual-piano-white-key-label-active: 59 130 246; /* blue-500 */
+  --virtual-piano-white-key-note-idle: 203 213 225; /* slate-300 */
+  --virtual-piano-white-key-note-active: 29 78 216; /* blue-700 */
+
+  --virtual-piano-black-key-bg-idle: 31 33 36; /* Use key-black-idle */
+  --virtual-piano-black-key-bg-active: 50 50 52; /* Use surface-tertiary */
+  --virtual-piano-black-key-border: 51 51 51;
+  --virtual-piano-black-key-shadow: 0 0 0;
+  --virtual-piano-black-key-highlight: 255 255 255; /* Pure white for reflection */
 }
 
 /* --- LIGHT MODE Overrides --- */
@@ -75,4 +90,19 @@ html.dark {
   
   --color-base-body-bg: 242 242 247;
   --color-base-body-text: 0 0 0;
+
+  /* Virtual Piano Specific Colors - Light mode overrides */
+  --virtual-piano-white-key-bg-idle: 255 255 255;
+  --virtual-piano-white-key-bg-active: 224 224 224;
+  --virtual-piano-white-key-border: 170 170 170;
+  --virtual-piano-white-key-label-idle: 110 110 110; /* darker gray for light mode */
+  --virtual-piano-white-key-label-active: 0 122 255; /* iOS Blue */
+  --virtual-piano-white-key-note-idle: 150 150 155;
+  --virtual-piano-white-key-note-active: 0 71 179; /* darker blue */
+
+  --virtual-piano-black-key-bg-idle: 0 0 0; /* Pure black for light mode */
+  --virtual-piano-black-key-bg-active: 30 30 32;
+  --virtual-piano-black-key-border: 51 51 51;
+  --virtual-piano-black-key-shadow: 0 0 0;
+  --virtual-piano-black-key-highlight: 255 255 255;
 }

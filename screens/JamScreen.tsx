@@ -1,9 +1,8 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { AppState, NoteName } from '../types';
 import { useAudioPoll } from '../hooks/useAudioPoll';
 import { NOTES_ORDER } from '../constants';
-import PianoKey from '../components/PianoKey';
+// import PianoKey from '../components/PianoKey'; // Removed, JamScreen won't render its own keys
 
 interface JamScreenProps {
     setAppState: (state: AppState) => void;
@@ -122,55 +121,15 @@ const JamScreen: React.FC<JamScreenProps> = ({ setAppState }) => {
               </div>
           </div>
 
-          {/* Keyboard Visualizer (Non-Interactive) */}
+          {/* Keyboard Visualizer - Removed. JamScreen will not render its own keys for simplicity. */}
+          {/* The interactive virtual piano is only enabled via settings in GameScreen now. */}
+          {/* The focus of JamScreen is the visualizer, chord detection, and notes list. */}
           <div className="h-[25vh] w-full bg-zinc-900/80 dark:bg-surface-secondary backdrop-blur-lg border-t border-white/10 dark:border-border-default flex items-end justify-center relative z-20 pb-0">
-               <div className="relative flex h-full w-full max-w-5xl mx-auto px-4">
-                  {[3, 4, 5].map(octave => 
-                      NOTES_ORDER.map((note) => {
-                          const isBlack = note.includes('#');
-                          // Check if this specific key is pressed
-                          const isActive = currentInput.activeNotes.some(n => n.note === note && n.octave === octave);
-
-                          if (isBlack) return null;
-                          
-                          let blackKeyNote: NoteName | null = null;
-                          if (note === NoteName.C) blackKeyNote = NoteName.Cs;
-                          if (note === NoteName.D) blackKeyNote = NoteName.Ds;
-                          if (note === NoteName.F) blackKeyNote = NoteName.Fs;
-                          if (note === NoteName.G) blackKeyNote = NoteName.Gs;
-                          if (note === NoteName.A) blackKeyNote = NoteName.As;
-
-                          const isBlackActive = blackKeyNote ? currentInput.activeNotes.some(n => n.note === blackKeyNote && n.octave === octave) : false;
-
-                          return (
-                              <div key={`${note}${octave}`} className="flex-1 relative h-full">
-                                  <PianoKey 
-                                      note={note} isBlack={false} 
-                                      isTarget={false}
-                                      isInput={isActive} // Light up on input
-                                      className="w-full h-full"
-                                      // Fix: Add required octave prop
-                                      octave={octave}
-                                  />
-                                  {blackKeyNote && (
-                                      <div className="absolute top-0 right-0 w-0 h-full z-20 overflow-visible">
-                                          <PianoKey
-                                              note={blackKeyNote}
-                                              isBlack={true}
-                                              isTarget={false}
-                                              isInput={isBlackActive} // Light up on input
-                                              // Fix: Add required octave prop
-                                              octave={octave}
-                                          />
-                                      </div>
-                                  )}
-                              </div>
-                          );
-                      })
-                  )}
-               </div>
-               {/* Fade Overlay for edges */}
-               <div className="absolute inset-0 pointer-events-none bg-surface-primary via-transparent to-surface-primary" />
+               {/* This area is now empty or can be filled with a static visual element if desired,
+                   but for simplicity and to prevent potential conflicts, we'll keep it empty. */}
+               <p className="text-center text-text-secondary opacity-60 text-sm py-4">
+                   Play your instrument! Detected notes will appear above.
+               </p>
           </div>
       </div>
   );
